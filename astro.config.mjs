@@ -35,40 +35,33 @@ export default defineConfig({
   site: "https://evandufraisse.github.io",
   base: "/",
   trailingSlash: "always",
-  integrations: [
-    tailwind(),
-    swup({
-      theme: false,
-      animationClass: 'transition-swup-',   // see https://swup.js.org/options/#animationselector
-      // the default value `transition-` cause transition delay
-      // when the Tailwind class `transition-all` is used
-      containers: ['main'],
-      smoothScrolling: true,
-      cache: true,
-      preload: true,
-      accessibility: true,
-      updateHead: true,
-      updateBodyClass: false,
-      globalInstance: true,
-    }),
-    icon({
-      include: {
-        "material-symbols": ["*"],
-        "fa6-brands": ["*"],
-        "fa6-regular": ["*"],
-        "fa6-solid": ["*"],
-      },
-    }),
-    svelte(),
-    sitemap(),
-    Compress({
-      CSS: false,
-      Image: false,
-      Action: {
-        Passed: async () => true,   // https://github.com/PlayForm/Compress/issues/376
-      },
-    }),
-  ],
+  integrations: [tailwind(), swup({
+    theme: false,
+    animationClass: 'transition-swup-',   // see https://swup.js.org/options/#animationselector
+    // the default value `transition-` cause transition delay
+    // when the Tailwind class `transition-all` is used
+    containers: ['main'],
+    smoothScrolling: true,
+    cache: true,
+    preload: true,
+    accessibility: true,
+    updateHead: true,
+    updateBodyClass: false,
+    globalInstance: true,
+  }), icon({
+    include: {
+      "material-symbols": ["*"],
+      "fa6-brands": ["*"],
+      "fa6-regular": ["*"],
+      "fa6-solid": ["*"],
+    },
+  }), svelte(), sitemap(), Compress({
+    CSS: false,
+    Image: false,
+    Action: {
+      Passed: async () => true,   // https://github.com/PlayForm/Compress/issues/376
+    },
+  }), mdx()],
   markdown: {
     remarkPlugins: [remarkMath, remarkReadingTime, remarkExcerpt, remarkGithubAdmonitionsToDirectives, remarkDirective, parseDirectiveNode],
     rehypePlugins: [
