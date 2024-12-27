@@ -85,6 +85,7 @@ In the end, it is quite comparable to the other models, except for two aspects: 
 
 Positional embeddings, [Rotary (RoPE)](https://arxiv.org/abs/2104.09864) and [Alibi](https://arxiv.org/abs/2108.12409), are two positional encoding methods introduced in 2021. In its paper, Alibi compares itself to RoPE on extrapolation to sequences longer than those encountered during pre-training, demonstrating an "out-of-the-box" superiority in this regard:
 
+![Alibi vs RoPE](./bloom/tables_alibi_rope.jpg)
 
 <div align="center">
 
