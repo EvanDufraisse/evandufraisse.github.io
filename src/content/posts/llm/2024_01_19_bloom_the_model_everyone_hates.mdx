@@ -5,6 +5,7 @@ tags: [LLM, Essay, Tech]
 category: LLM
 image: "./bloom_cover.jpg"
 ---
+import { Image } from 'astro:assets';
 # TL;DR
 
 This article examines the criticized Bloom-7B language model, comparing it to newer open-weight competitors like LLaMA-7B, Falcon-7B, and Mistral-7B. It explores claims of obsolescence, addressing architectural features (e.g., Alibi embeddings and tokenizer size), training limitations (undertraining on fewer tokens), and alternative design choices in newer models (SwiGLU, RMSNorm, GQA). The findings suggest Bloom's underperformance stems more from undertraining than outdated architecture. Despite the critiques, the article argues for the potential of open-source models like Bloom, emphasizing the need for better scaling and data strategies to unlock their competitive edge.
@@ -85,11 +86,9 @@ In the end, it is quite comparable to the other models, except for two aspects: 
 
 Positional embeddings, [Rotary (RoPE)](https://arxiv.org/abs/2104.09864) and [Alibi](https://arxiv.org/abs/2108.12409), are two positional encoding methods introduced in 2021. In its paper, Alibi compares itself to RoPE on extrapolation to sequences longer than those encountered during pre-training, demonstrating an "out-of-the-box" superiority in this regard:
 
-![Alibi vs RoPE](./bloom/tables_alibi_rope.jpg)
-
 <div align="center">
 
-<img src="./bloom/tables_alibi_rope.jpg" alt="Alibi vs RoPE" style="width: 90%;"/>
+<Image src="/images/bloom/tables_alibi_rope.jpg" alt="Alibi vs RoPE" style="width: 90%;"/>
 
 </div>
 
@@ -97,7 +96,7 @@ Referring to the article on the Falcon model family, whose implementation code a
 
 
 <div align="center">
-<img src="./bloom/falcon_alibi_rope_experiments.jpg" alt="Falcon's Alibi vs RoPE experiments" style="width: 90%;"/>
+<Image src="/images/bloom/falcon_alibi_rope_experiments.jpg" alt="Falcon's Alibi vs RoPE experiments" style="width: 90%;"/>
 </div>
 
 They note that the observed advantage may be significant for 1B models, it becomes less clear as model size increases.
@@ -137,7 +136,7 @@ First introduced in a 2020 [Google paper](https://arxiv.org/abs/2002.05202v1), t
 
 
 <div align="center">
-<img src="./bloom/swiglu_google_experiment.jpg" alt="SwiGlu Experiments" style="width: 90%;"/>
+<Image src="/images/bloom/swiglu_google_experiment.jpg" alt="SwiGlu Experiments" style="width: 90%;"/>
 </div>
 
 As well as on GLUE and SuperGLUE benchmarks, improving average scores from **84.20** to **84.36** and **73.95** to **74.56**, respectively.
@@ -145,7 +144,7 @@ As well as on GLUE and SuperGLUE benchmarks, improving average scores from **84.
 This activation function [was also considered](https://arxiv.org/abs/2210.15424) by Bloom's Architecture Working Group, which ultimately reversed its initial decision and recommended SwiGLU for future models due to its slight advantage:
 
 <div align="center">
-<img src="./bloom/swiglu_bigscience.jpg" alt="SwiGlu Experiments" style="width: 40%;"/>
+<Image src="/images/bloom/swiglu_bigscience.jpg" alt="SwiGlu Experiments" style="width: 40%;"/>
 </div>
 
 
@@ -203,7 +202,7 @@ The rule derived from the Chinchilla Laws is often summarized as: "You need 20 t
 LLaMA 2's training curves illustrate this concept well: for a 7B parameter model, the "compute-optimal" triplet corresponds to 7×20=140 billion tokens. However, the perplexity curves show that the 7B model continues to improve beyond this limit, converging to lower perplexity levels. Even after training on 2000 billion tokens, the model has not yet reached saturation.
 
 <div align="center">
-<img src="./bloom/llama2_training_curves.jpg" alt="Llama-2 perplexity per number of tokens seen during training"style="width: 70%;"/>
+<Image src="/images/bloom/llama2_training_curves.jpg" alt="Llama-2 perplexity per number of tokens seen during training"style="width: 70%;"/>
 </div>
 
 ## Conclusion 🎯
