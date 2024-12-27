@@ -3,7 +3,7 @@ title: Bloom, the model everyone hates...
 published: 2024-01-19
 tags: [LLM, Essay, Tech]
 category: Tech
-image: "./bloom_cover.jpeg"
+image: "./bloom_cover.jpg"
 ---
 # TL;DR
 
