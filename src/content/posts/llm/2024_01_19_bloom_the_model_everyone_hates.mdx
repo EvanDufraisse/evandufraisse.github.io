@@ -89,7 +89,7 @@ Positional embeddings, [Rotary (RoPE)](https://arxiv.org/abs/2104.09864) and [Al
 
 <div align="center">
 
-<img src="./bloom/tables_alibi_rope.jpg" alt="Alibi vs RoPE" style="width: 90%;">
+<img src="./bloom/tables_alibi_rope.jpg" alt="Alibi vs RoPE" style="width: 90%;"/>
 
 </div>
 
@@ -97,7 +97,7 @@ Referring to the article on the Falcon model family, whose implementation code a
 
 
 <div align="center">
-<img src="./bloom/falcon_alibi_rope_experiments.jpg" alt="Falcon's Alibi vs RoPE experiments" style="width: 90%;">
+<img src="./bloom/falcon_alibi_rope_experiments.jpg" alt="Falcon's Alibi vs RoPE experiments" style="width: 90%;"/>
 </div>
 
 They note that the observed advantage may be significant for 1B models, it becomes less clear as model size increases.
@@ -137,7 +137,7 @@ First introduced in a 2020 [Google paper](https://arxiv.org/abs/2002.05202v1), t
 
 
 <div align="center">
-<img src="./bloom/swiglu_google_experiment.jpg" alt="SwiGlu Experiments" style="width: 90%;">
+<img src="./bloom/swiglu_google_experiment.jpg" alt="SwiGlu Experiments" style="width: 90%;"/>
 </div>
 
 As well as on GLUE and SuperGLUE benchmarks, improving average scores from **84.20** to **84.36** and **73.95** to **74.56**, respectively.
@@ -145,7 +145,7 @@ As well as on GLUE and SuperGLUE benchmarks, improving average scores from **84.
 This activation function [was also considered](https://arxiv.org/abs/2210.15424) by Bloom's Architecture Working Group, which ultimately reversed its initial decision and recommended SwiGLU for future models due to its slight advantage:
 
 <div align="center">
-<img src="./bloom/swiglu_bigscience.jpg" alt="SwiGlu Experiments" style="width: 40%;">
+<img src="./bloom/swiglu_bigscience.jpg" alt="SwiGlu Experiments" style="width: 40%;"/>
 </div>
 
 
@@ -203,7 +203,7 @@ The rule derived from the Chinchilla Laws is often summarized as: "You need 20 t
 LLaMA 2's training curves illustrate this concept well: for a 7B parameter model, the "compute-optimal" triplet corresponds to 7×20=140 billion tokens. However, the perplexity curves show that the 7B model continues to improve beyond this limit, converging to lower perplexity levels. Even after training on 2000 billion tokens, the model has not yet reached saturation.
 
 <div align="center">
-<img src="./bloom/llama2_training_curves.jpg" alt="Llama-2 perplexity per number of tokens seen during training"style="width: 70%;">
+<img src="./bloom/llama2_training_curves.jpg" alt="Llama-2 perplexity per number of tokens seen during training"style="width: 70%;"/>
 </div>
 
 ## Conclusion 🎯
