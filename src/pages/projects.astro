@@ -7,6 +7,31 @@ const projects = [
   { id: 3, title: "Project Three", description: "Description of Project Three", image: "/images/selfhosted/forward_reverse_proxy.webp" },
 ];
 ---
+
+<script>
+function initializeSidebarSticky() {
+  const stickySidebar = document.getElementById("sidebar-sticky");
+  if (stickySidebar) {
+    const url = window.location.pathname;
+    console.log(url);
+    if (url.endsWith("/blog") || url.endsWith("/blog/")) {
+      stickySidebar.style.display = "flex";
+    } else {
+      stickySidebar.style.display = "none";
+    }
+  } else {
+    console.warn('Element with id "sidebar-sticky" not found.');
+  }
+}
+
+// Attach the function to run after content is swapped
+document.addEventListener("astro:after-swap", initializeSidebarSticky);
+
+// Run the function on the initial page load
+initializeSidebarSticky();
+
+</script>
+
 <MainGridLayout>
 <div class="gallery">
   {projects.map(project => (
