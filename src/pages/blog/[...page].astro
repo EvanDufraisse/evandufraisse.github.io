@@ -24,7 +24,8 @@ function initializeSidebarSticky() {
   if (stickySidebar) {
     const url = window.location.pathname;
     console.log(url);
-    if (url.endsWith("/blog") || url.endsWith("/blog/")) {
+    if (url.endsWith("/blog") || url.endsWith("/blog/") || /\/blog\/\d\/?$/.test(url)
+) {
       stickySidebar.style.display = "flex";
     } else {
       stickySidebar.style.display = "none";
