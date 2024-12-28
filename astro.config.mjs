@@ -31,10 +31,11 @@ const oklchToHex = (str) => {
 }
 
 // https://astro.build/config
+
 export default defineConfig({
   site: "https://evandufraisse.github.io",
   base: "/",
-  trailingSlash: "always",
+  trailingSlash: "ignore",
   integrations: [tailwind(), swup({
     theme: false,
     animationClass: 'transition-swup-',   // see https://swup.js.org/options/#animationselector

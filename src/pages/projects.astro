@@ -1,0 +1,50 @@
+---
+import MainGridLayout from '../layouts/MainGridLayout.astro'
+
+const projects = [
+  { id: 1, title: "Project One", description: "Description of Project One", image: "/images/selfhosted/forward_reverse_proxy.webp" },
+  { id: 2, title: "Project Two", description: "Description of Project Two", image: "/images/selfhosted/forward_reverse_proxy.webp" },
+  { id: 3, title: "Project Three", description: "Description of Project Three", image: "/images/selfhosted/forward_reverse_proxy.webp" },
+];
+---
+<MainGridLayout>
+<div class="gallery">
+  {projects.map(project => (
+    <div class="project-card" key={project.id}>
+      <img src={project.image} alt={project.title} class="project-image" />
+      <h3 class="project-title">{project.title}</h3>
+      <p class="project-description">{project.description}</p>
+    </div>
+  ))}
+</div>
+</MainGridLayout>
+
+<style>
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    padding: 16px;
+  }
+  .project-card {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    background-color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  .project-image {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+  }
+  .project-title {
+    margin: 12px 0 8px;
+    font-size: 1.25em;
+  }
+  .project-description {
+    color: #555;
+    font-size: 1em;
+  }
+</style>
