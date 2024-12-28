@@ -39,7 +39,7 @@ export const navBarConfig: NavBarConfig = {
     // LinkPreset.About,
     {
       name: 'Home',
-      url: '/about',
+      url: '/',
       external: false,
     },
     {
