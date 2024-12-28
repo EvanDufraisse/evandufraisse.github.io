@@ -2,9 +2,9 @@
 import MainGridLayout from '../layouts/MainGridLayout.astro'
 
 const projects = [
-  { id: 1, title: "Project One", description: "Description of Project One", image: "/images/selfhosted/forward_reverse_proxy.webp" },
-  { id: 2, title: "Project Two", description: "Description of Project Two", image: "/images/selfhosted/forward_reverse_proxy.webp" },
-  { id: 3, title: "Project Three", description: "Description of Project Three", image: "/images/selfhosted/forward_reverse_proxy.webp" },
+  { id: 1, title: "Agent Self-Hosting Project", description: "A journey to self-hosting savy agents", image: "/images/selfhosted/project_agent_banner.png" },
+  { id: 2, title: "Song Recommender System", description: "Do away with collaborative-filtering", image: "/images/song_recommender/song_recommender_system_banner.png" },
+  { id: 3, title: "News Summarizer", description: "Get aggregate news udpates", image: "/images/news_summarizer/news_summarizer_banner.jpg" }, 
 ];
 ---
 
@@ -35,11 +35,13 @@ initializeSidebarSticky();
 <MainGridLayout>
 <div class="gallery">
   {projects.map(project => (
+    <a href="http://localhost:4321/projects" aria-label={project.title}>
     <div class="project-card" key={project.id}>
       <img src={project.image} alt={project.title} class="project-image" />
       <h3 class="project-title">{project.title}</h3>
       <p class="project-description">{project.description}</p>
     </div>
+    </a>
   ))}
 </div>
 </MainGridLayout>
@@ -59,10 +61,15 @@ initializeSidebarSticky();
     background-color: #fff;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
+  .project-card:hover {
+    border-color: #3b82f6;
+  }
   .project-image {
     width: 100%;
     height: auto;
     border-radius: 4px;
+    object-fit: cover;
+    aspect-ratio: 1280 / 600;
   }
   .project-title {
     margin: 12px 0 8px;
