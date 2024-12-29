@@ -54,6 +54,11 @@ export const navBarConfig: NavBarConfig = {
     },
     LinkPreset.Archive,
     {
+      name: 'Publications',
+      url: 'https://scholar.google.com/citations?user=YeWwlxgAAAAJ&hl=fr',
+      external: true,
+    },
+    {
       name: 'GitHub',
       url: 'https://github.com/EvanDufraisse',     // Internal links should not include the base path, as it is automatically added
       external: true,                               // Show an external link icon and will open in a new tab
