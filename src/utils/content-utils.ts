@@ -3,10 +3,10 @@ import type { BlogPostData } from '@/types/config'
 import I18nKey from '@i18n/i18nKey'
 import { i18n } from '@i18n/translation'
 
-export async function getSortedPosts(): Promise<
+export async function getSortedPosts(collectionName: string = 'posts',): Promise<
   { body: string, data: BlogPostData; slug: string }[]
 > {
-  const allBlogPosts = (await getCollection('posts', ({ data }) => {
+  const allBlogPosts = (await getCollection(collectionName, ({ data }) => {
     return import.meta.env.PROD ? data.draft !== true : true
   })) as unknown as { body: string, data: BlogPostData; slug: string }[]
 
