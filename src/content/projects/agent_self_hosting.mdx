@@ -9,16 +9,63 @@ published: 2024-12-29
     Status: In Progress ​🚧​
 </div>
 
-<div class="bg-black/5 dark:bg-white/10 rounded-lg transition-none">
-<nav>
-    <h2>Table of Contents</h2>
-    <ul>
-        <li>Setting-up the infrastructure</li>
-        <ul>
-            <li>Choice of a server: <a href="../../posts/self-hosted/self_hosting_server_choice">Raspberry Pi alternatives for self-hosting</a></li>
-            <li>Access your server from the Web: <a href="../../posts/self-hosted/self_hosting_ssh_through_firewall">SSH connection from the Web</a></li>
-            <li>Secure your connection with a VPS: <a href="../../posts/self-hosted/self_hosting_proxy">Configure your Reverse Proxy</a></li>
-        </ul>
+# Introduction 🚀
+
+This is a project I’ve envisioned since the early days of my PhD. Now that it's behind me and I’ve carved out some time, I’m finally diving in.
+
+My fascination with the web—how it works, how to host services—has only grown over time. The recent LLM wave has amplified that curiosity, and now I’m ready to turn it into something tangible!
+
+In this series of blog posts, I'll document my journey of self-hosting LLMs and various services to elicit agentic behaviors, everything on a low-end consumer-grade mini-pc!
+
+
+
+<div class="bg-black/5 dark:bg-white/10 rounded-lg px-6 py-1 shadow-lg transition-none">
+  <nav>
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Table of Contents</h2>
+    <ul class="list-disc list-inside text-gray-700 dark:text-gray-300 space-y-4">
+      <li class="text-lg font-semibold text-gray-900 dark:text-gray-100">Setting-up the infrastructure</li>
+      <ul class="list-disc list-inside pl-5 space-y-2">
+        <li class="text-gray-600 dark:text-gray-400">Choice of a server: <a href="../../posts/self-hosted/self_hosting_server_choice" class="text-blue-600 hover:underline dark:text-blue-400">Raspberry Pi alternatives for self-hosting</a></li>
+        <li class="text-gray-600 dark:text-gray-400">Access your server from the Web: <a href="../../posts/self-hosted/self_hosting_ssh_through_firewall" class="text-blue-600 hover:underline dark:text-blue-400">SSH connection from the Web</a></li>
+        <li class="text-gray-600 dark:text-gray-400">Secure your connection with a VPS: <a href="../../posts/self-hosted/self_hosting_proxy" class="text-blue-600 hover:underline dark:text-blue-400">Configure your Reverse Proxy</a></li>
+      </ul>
     </ul>
-</nav>
+  </nav>
 </div>
+
+
+## The Vision 🌟
+
+Ultimately, my goal is to orchestrate various self-hosted services and specialized LLMs through a unified chat interface. This isn’t just about hosting—it’s about integration. I envision a system where:
+
+- 📩 Notifications from different chatbot services reach me seamlessly.
+- 💬 I can send actionable messages to these services from one platform.
+
+For now the choice of a Matrix server with distinct accounts for each service seems to me the best option to achieve this.
+
+
+
+## The Setup 🛠️
+
+My homelab is modest but equipped for experimentation:
+
+- **Compute server**: 32 cores, 64 threads, 128GB RAM, 10TB storage, 2 GPUs (40GB total VRAM)
+- **Storage server**: 32TB, perfect for datasets
+- **Raspberry Pi 4**: 8GB RAM for IoT and home automation
+- **Inference server**: A small mini-pc, savy in power consumption, for serving models and services
+
+With this setup, I’m ready to embark on my self-hosting journey. Self-hosting LLMs might seem daunting, but recent advancements have made it far more approachable. Innovations in pretraining, parameter pruning, quantization, compression, distillation, and context reduction have dramatically lowered the barrier to entry. Tools like `llama.cpp` and projects from contributors like Tom Jobbins ([TheBloke](https://huggingface.co/TheBloke)) have even made running Llama-2 7B on a Raspberry Pi a reality ([source](https://medium.com/@wilsosomdb/how-to-get-llama2-running-on-your-raspberry-pi-from-8c551115323d)).
+
+Moreover, self-hosting LLMs enables you to run fine-tuned models that are often more efficient and task-specific than relying on large LLM APIs with prompt engineering. It’s an empowering alternative to the constraints and costs of third-party services.
+
+### Ideas of Services to Implement 🧩
+
+Here’s a snapshot of my broader ambitions:
+
+- **Obsidian integration**: Read and write directly to my vault
+- **Voice note-taking**: Send voice messages and convert them to text 
+- **Automated Anki cards**: Generate cards from my readings effortlessly 
+- **Daily news digests**: Summarize global news every morning from diverse sources
+
+While these could be achieved using existing LLM providers like OpenAI, I prefer the independence and control of building them myself. Self-hosting offers customization, freedom from API price changes, and deeper integration with other self-hosted services.
+If going bigger, it should be possible to easily change to cloud-based providers, as the underlying knowledge and skills are transferable. It’s going to be challenging, but knowledge, skill-building, and complete ownership are, I think, well worth it.
