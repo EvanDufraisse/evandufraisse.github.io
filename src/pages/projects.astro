@@ -35,11 +35,25 @@ initializeSidebarSticky();
 <MainGridLayout>
 <div class="gallery">
   {projects.map(project => (
-    <a href="http://localhost:4321/projects" aria-label={project.title}>
-    <div class="project-card" key={project.id}>
-      <img src={project.image} alt={project.title} class="project-image" />
-      <h3 class="project-title">{project.title}</h3>
-      <p class="project-description">{project.description}</p>
+    <a href="http://localhost:4321/projects" aria-label={project.title}
+    class="dark:hover:border-gray-200 dark:border-gray-500 hover:border-blue-200 border-stone-100 border-2 dark:border-0.5 block rounded-lg"
+    >
+    <div class=
+    "
+    project-card 
+    dark:project-card 
+    bg-[var(--card-bg)]
+    " 
+    style="
+    border: 1px;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    "
+    key={project.id}>
+      <img src={project.image} alt={project.title} class="project-image" style="margin-bottom: 8px;" />
+      <h3 class="project-title text-black/100 dark:text-white/90 transition" style="text-align: center">{project.title}</h3>
+      <p class="project-description text-black/80 dark:text-white/70 transition">{project.description}</p>
     </div>
     </a>
   ))}
@@ -53,30 +67,11 @@ initializeSidebarSticky();
     gap: 16px;
     padding: 16px;
   }
-  .project-card {
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 16px;
-    text-align: center;
-    background-color: #fff;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  .project-card:hover {
-    border-color: #3b82f6;
-  }
   .project-image {
     width: 100%;
     height: auto;
     border-radius: 4px;
     object-fit: cover;
     aspect-ratio: 1280 / 600;
-  }
-  .project-title {
-    margin: 12px 0 8px;
-    font-size: 1.25em;
-  }
-  .project-description {
-    color: #555;
-    font-size: 1em;
   }
 </style>
