@@ -2,6 +2,11 @@
 // Import necessary components and functions
 import MainGridLayout from '../../layouts/MainGridLayout.astro'
 import { getCollection } from 'astro:content'
+import Markdown from '@components/misc/Markdown.astro'
+import { getEntry } from 'astro:content'
+
+const about = await getEntry('spec', 'about')
+const { Content: About } = await about.render()
 
 // Fetch the projects collection
 const projects = await getCollection('projects', ({ data }) => {
@@ -11,6 +16,12 @@ const projects = await getCollection('projects', ({ data }) => {
 
 
 <MainGridLayout>
+<div class="flex flex-col gap-6 w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
+ <div class="card-base z-10 px-9 py-6 relative w-full">
+            <Markdown class="mt-2 text-xl">
+                <About />
+            </Markdown>
+        </div>
   <div class="gallery">
     {projects.map(project => (
       <a href={`/projects/${project.slug}`} aria-label={project.data.title}
@@ -25,6 +36,7 @@ const projects = await getCollection('projects', ({ data }) => {
         </div>
       </a>
     ))}
+  </div>
   </div>
 </MainGridLayout>
 
