@@ -16,13 +16,15 @@ Explore my [Projects](https://evandufraisse.github.io/projects) and read all my 
 
 ## About Me
 
+You can find my resume [here](/pdf/blog_resume_evan_dufraisse.pdf).
+
 I got into programming early on and have been hooked on computers ever since. My curiosity and drive led me to specialize in **Operations Research** at IMT Atlantique in 2019, followed by a deep dive into **Deep Learning** while earning an MSc in Computer Science from Georgia Tech in 2021.
 
 I pursued a PhD at **CEA List** and **Loria**, working on an interdisciplinary project that brought together computer scientists, economists, and political scientists to design algorithms aimed at reducing societal polarization. My focus was on modeling articles using **language models**.
 
-Currently, I’m a **research engineer at CEA List**, exploring exciting applications in **NLP** and **deep learning**. I’m also a teaching assistant in **machine learning** and **computer science** at the University of Paris-Saclay and Centrale Supélec.
+Currently, I’m a **research engineer at CEA List**, exploring exciting applications and research ideas in **NLP** and **deep learning**. I’m also a teaching assistant in **machine learning** and **computer science** at the University of Paris-Saclay and Centrale Supélec.
 
-In my spare time, I enjoy working on **side projects**, diving into a good book, or hitting the pavement for **lots of running**.
+In my spare time, I enjoy working on **side projects**, diving into books, or running!.
 
 ---
 
