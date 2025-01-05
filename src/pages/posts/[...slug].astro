@@ -45,6 +45,20 @@ const jsonLd = {
   // TODO include cover image here
 }
 ---
+
+<style>
+  @font-face {
+    font-family: 'Charter';
+    src: url('https://huggingface.co/front/assets/fonts/4456da5f-718b-4e7d-a2b0-367a0ae7cfa5.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  .charter-font {
+    font-family: 'Charter', sans-serif;
+  }
+</style>
+
 <MainGridLayout banner={entry.data.image} title={entry.data.title} description={entry.data.description} lang={entry.data.lang} setOGTypeArticle={true}>
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
     <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4">
@@ -77,7 +91,7 @@ const jsonLd = {
                     md:before:w-1 before:h-5 before:rounded-md before:bg-[var(--primary)]
                     before:absolute before:top-[0.75rem] before:left-[-1.125rem]
                 ">
-                    {entry.data.title}
+                    <div class="charter-font">{entry.data.title}</div>
                 </div>
             </div>
 
