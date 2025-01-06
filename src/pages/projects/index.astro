@@ -25,7 +25,7 @@ const projects = await getCollection('projects', ({ data }) => {
   <div class="gallery">
     {projects.map(project => (
       <a href={`/projects/${project.slug}`} aria-label={project.data.title}
-         class="dark:hover:border-gray-200 dark:border-gray-500 hover:border-blue-200 border-stone-100 border-2 dark:border-0.5 block rounded-lg"
+         class="dark:hover:border-gray-200 dark:border-gray-500 hover:border-blue-200 border-stone-100 border-2 dark:border-0.5 block rounded-lg w-1/2"
       >
         <div class="project-card dark:project-card bg-[var(--card-bg)]" 
              style="border: 1px; border-radius: 8px; padding: 16px; text-align: center;"
