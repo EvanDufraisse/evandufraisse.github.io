@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Training and test sets - interactive 80/20 split</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #6e7788;
+      --grid: #e6e9f0;
+      --plot: #fbfcfe;
+      --all: #a7b1c0;
+      --train: #2869d8;
+      --test: #ef9d42;
+      --control-bg: #f4f6fa;
+      --control-border: #dbe0e8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font-family: Inter, Aptos, "Segoe UI", Arial, sans-serif;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .app {
+      width: min(1180px, 100vw);
+      height: min(760px, 100vh);
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      background: #fff;
+    }
+
+    .stage {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 0 12px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-height: 650px;
+    }
+
+    text { user-select: none; }
+
+    .title {
+      fill: var(--ink);
+      font-size: 30px;
+      font-weight: 760;
+      letter-spacing: -0.55px;
+    }
+
+    .subtitle {
+      fill: var(--muted);
+      font-size: 15.5px;
+      font-weight: 450;
+    }
+
+    .legend-label {
+      fill: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .tick {
+      fill: #687388;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .axis-label {
+      fill: #263147;
+      font-size: 15.5px;
+      font-weight: 720;
+    }
+
+    .point {
+      stroke: #fff;
+      stroke-width: 0.9;
+      vector-effect: non-scaling-stroke;
+      transition: fill 420ms ease, opacity 420ms ease, r 300ms ease, stroke-width 300ms ease;
+    }
+
+    .point.all { fill: var(--all); opacity: 0.94; }
+    .point.train { fill: var(--train); opacity: 0.92; }
+    .point.test { fill: var(--test); opacity: 0.98; }
+    .point.dimmed { opacity: 0.13; }
+    .point.emphasis { r: 4.2px; stroke-width: 1.35; }
+
+    .callout {
+      opacity: 0;
+      transform: translateY(5px);
+      transition: opacity 300ms ease, transform 300ms ease;
+      pointer-events: none;
+    }
+
+    .callout.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .callout rect {
+      fill: #fff;
+      stroke-width: 1.5;
+    }
+
+    .callout text {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .controls {
+      border-top: 1px solid #e6e9f0;
+      padding: 10px 16px 14px;
+      display: grid;
+      grid-template-columns: auto minmax(330px, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255, 255, 255, 0.98);
+    }
+
+    .button-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    button {
+      border: 1px solid var(--control-border);
+      background: var(--control-bg);
+      color: #263147;
+      min-height: 38px;
+      padding: 7px 12px;
+      border-radius: 10px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 680;
+      cursor: pointer;
+      transition: background 150ms ease, border-color 150ms ease, transform 100ms ease;
+    }
+
+    button:hover { background: #e9edf5; border-color: #c9d0dc; }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.38; cursor: default; transform: none; }
+    button:focus-visible { outline: 3px solid rgba(40, 105, 216, 0.28); outline-offset: 2px; }
+
+    .primary {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #fff;
+      min-width: 88px;
+    }
+
+    .primary:hover { background: #263147; border-color: #263147; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .step {
+      min-width: 0;
+      background: transparent;
+      border-color: transparent;
+      color: #7b8495;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+      padding-top: 14px;
+    }
+
+    .step::before {
+      content: "";
+      position: absolute;
+      top: 5px;
+      left: 6px;
+      right: 6px;
+      height: 4px;
+      border-radius: 999px;
+      background: #e1e5ec;
+    }
+
+    .step.done::before { background: #9fbbe9; }
+    .step.active { color: var(--ink); background: #f8f9fc; }
+    .step.active::before { background: var(--train); }
+
+    .hint {
+      color: #8a93a3;
+      font-size: 11px;
+      line-height: 1.25;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      .controls { grid-template-columns: 1fr; gap: 8px; }
+      .button-row { justify-content: center; }
+      .hint { display: none; }
+      .steps { order: -1; }
+      button { min-height: 34px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .point, .callout { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="stage" aria-label="Interactive chart showing an 80/20 training and test split">
+      <svg id="chart" viewBox="0 0 864 518" role="img" aria-labelledby="chartTitle chartDescription">
+        <title id="chartTitle">Training and test sets</title>
+        <desc id="chartDescription">One hundred tree observations are divided randomly into eighty training observations and twenty test observations.</desc>
+
+        <text class="title" x="82" y="60">Training and test sets</text>
+        <text id="subtitle" class="subtitle" x="82" y="80">All 100 observations</text>
+
+        <g id="legend" transform="translate(82 100)">
+          <g id="legendAll">
+            <circle cx="2" cy="0" r="3.4" fill="#a7b1c0"></circle>
+            <text class="legend-label" x="11" y="4">All observations</text>
+          </g>
+          <g id="legendTrain" opacity="0" transform="translate(0 0)">
+            <circle cx="2" cy="0" r="3.4" fill="#2869d8"></circle>
+            <text id="trainLegendText" class="legend-label" x="11" y="4">Training set: 80</text>
+          </g>
+          <g id="legendTest" opacity="0" transform="translate(145 0)">
+            <circle cx="2" cy="0" r="3.4" fill="#ef9d42"></circle>
+            <text id="testLegendText" class="legend-label" x="11" y="4">Test set: 20</text>
+          </g>
+        </g>
+
+        <rect x="82" y="119" width="753" height="332" fill="#fbfcfe" stroke="#dbe0e8" stroke-width="1"></rect>
+
+        <g stroke="#e6e9f0" stroke-width="1">
+          <line x1="108" y1="119" x2="108" y2="451"></line>
+          <line x1="237" y1="119" x2="237" y2="451"></line>
+          <line x1="367" y1="119" x2="367" y2="451"></line>
+          <line x1="497" y1="119" x2="497" y2="451"></line>
+          <line x1="627" y1="119" x2="627" y2="451"></line>
+          <line x1="756" y1="119" x2="756" y2="451"></line>
+          <line x1="82" y1="451" x2="835" y2="451"></line>
+          <line x1="82" y1="377" x2="835" y2="377"></line>
+          <line x1="82" y1="303" x2="835" y2="303"></line>
+          <line x1="82" y1="229" x2="835" y2="229"></line>
+          <line x1="82" y1="155" x2="835" y2="155"></line>
+        </g>
+
+        <g class="tick" text-anchor="middle">
+          <text x="108" y="470">10</text>
+          <text x="237" y="470">20</text>
+          <text x="367" y="470">30</text>
+          <text x="497" y="470">40</text>
+          <text x="627" y="470">50</text>
+          <text x="756" y="470">60</text>
+        </g>
+        <g class="tick" text-anchor="end">
+          <text x="74" y="455">0</text>
+          <text x="74" y="381">10</text>
+          <text x="74" y="307">20</text>
+          <text x="74" y="233">30</text>
+          <text x="74" y="159">40</text>
+        </g>
+
+        <text class="axis-label" x="458" y="495" text-anchor="middle">Stem diameter</text>
+        <text class="axis-label" x="50" y="285" text-anchor="middle" transform="rotate(-90 50 285)">Tree height</text>
+
+        <g id="points"></g>
+
+        <g id="trainCallout" class="callout" transform="translate(625 410)">
+          <rect x="0" y="0" width="178" height="28" rx="14" stroke="#2869d8"></rect>
+          <text x="89" y="18.5" text-anchor="middle" fill="#2869d8">Used to fit the model</text>
+        </g>
+        <g id="testCallout" class="callout" transform="translate(600 410)">
+          <rect x="0" y="0" width="203" height="28" rx="14" stroke="#ef9d42"></rect>
+          <text x="101.5" y="18.5" text-anchor="middle" fill="#d77d1d">Kept aside for evaluation</text>
+        </g>
+      </svg>
+    </section>
+
+    <nav class="controls" aria-label="Animation controls">
+      <div class="button-row">
+        <button id="previous" type="button" aria-label="Previous step">Back</button>
+        <button id="play" class="primary" type="button" aria-label="Play animation">Play</button>
+        <button id="next" type="button" aria-label="Next step">Next</button>
+        <button id="reset" type="button" aria-label="Reset animation">Reset</button>
+      </div>
+
+      <div class="steps" role="tablist" aria-label="Animation steps">
+        <button class="step active" data-step="0" role="tab" aria-selected="true">1. All data</button>
+        <button class="step" data-step="1" role="tab" aria-selected="false">2. Split 80/20</button>
+        <button class="step" data-step="2" role="tab" aria-selected="false">3. Training set</button>
+        <button class="step" data-step="3" role="tab" aria-selected="false">4. Test set</button>
+      </div>
+
+      <div class="hint">Left/right: steps<br>Space: play/pause &nbsp; F: fullscreen</div>
+    </nav>
+  </main>
+
+  <script>
+    "use strict";
+
+    const points = [
+      [110.3,380.0], [111.6,323.4], [119.4,368.6], [122.0,405.7], [128.5,382.3],
+      [129.7,288.5], [136.4,349.6], [138.6,357.4], [162.3,338.0], [168.7,364.5],
+      [170.0,376.3], [176.5,410.3], [185.5,382.3], [186.6,348.4], [194.6,331.4],
+      [195.7,321.0], [203.6,359.4], [208.6,400.6], [211.5,372.7], [225.6,328.4],
+      [251.6,335.6], [278.6,292.4], [292.2,294.1], [295.7,296.0], [300.6,354.6],
+      [320.0,265.0], [326.6,330.6], [332.0,253.3], [334.5,281.3], [351.4,243.6],
+      [359.4,307.6], [360.5,324.0], [367.0,321.7], [369.5,339.5], [369.5,358.7],
+      [385.3,336.5], [408.5,296.7], [412.4,287.4], [431.7,321.0], [451.4,283.4],
+      [451.4,295.4], [456.4,233.4], [462.6,250.4], [464.4,297.4], [464.4,345.4],
+      [469.3,232.5], [474.5,247.3], [483.6,237.6], [484.6,205.4], [496.5,324.0],
+      [499.3,276.0], [499.3,282.0], [500.5,269.3], [503.0,310.0], [508.4,326.6],
+      [529.0,281.3], [531.5,203.0], [532.7,336.5], [534.4,270.6], [547.4,240.6],
+      [549.6,155.6], [549.7,279.0], [597.3,244.7], [601.5,242.7], [605.4,191.4],
+      [613.9,248.7], [618.4,248.6], [624.7,248.0], [628.6,219.4], [628.6,231.6],
+      [628.7,274.5], [643.0,241.3], [646.6,228.4], [648.4,196.4], [650.6,155.6],
+      [689.7,209.0], [692.3,164.0], [697.5,225.3], [698.6,155.6], [703.6,281.4],
+      [713.0,155.7], [715.5,211.7], [737.6,155.6], [742.6,183.6], [742.6,225.4],
+      [743.0,155.5], [750.5,206.0], [758.4,228.4], [759.7,159.5], [761.0,265.7],
+      [768.6,192.6], [771.4,155.6], [775.3,221.5], [776.5,201.5], [788.4,155.6],
+      [793.4,210.4], [796.0,240.7], [798.5,195.0], [802.4,166.4], [815.3,189.0]
+    ];
+
+    const subtitles = [
+      "All 100 observations",
+      "Randomly divide the observations: 80% for training, 20% for testing",
+      "The model learns only from the 80 training observations",
+      "The 20 test observations remain unseen until evaluation"
+    ];
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const pointLayer = document.getElementById("points");
+    const subtitle = document.getElementById("subtitle");
+    const legendAll = document.getElementById("legendAll");
+    const legendTrain = document.getElementById("legendTrain");
+    const legendTest = document.getElementById("legendTest");
+    const trainLegendText = document.getElementById("trainLegendText");
+    const testLegendText = document.getElementById("testLegendText");
+    const trainCallout = document.getElementById("trainCallout");
+    const testCallout = document.getElementById("testCallout");
+    const previousButton = document.getElementById("previous");
+    const nextButton = document.getElementById("next");
+    const playButton = document.getElementById("play");
+    const resetButton = document.getElementById("reset");
+    const stepButtons = [...document.querySelectorAll(".step")];
+
+    function seededShuffle(length, seed) {
+      const values = Array.from({ length }, (_, index) => index);
+      let state = seed >>> 0;
+      const random = () => {
+        state ^= state << 13;
+        state ^= state >>> 17;
+        state ^= state << 5;
+        return (state >>> 0) / 4294967296;
+      };
+      for (let i = values.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(random() * (i + 1));
+        [values[i], values[j]] = [values[j], values[i]];
+      }
+      return values;
+    }
+
+    const assignmentOrder = seededShuffle(points.length, 20260816);
+    const testIndices = new Set(seededShuffle(points.length, 8020).slice(0, 20));
+    const circles = points.map(([x, y], index) => {
+      const circle = document.createElementNS(svgNS, "circle");
+      circle.setAttribute("cx", x);
+      circle.setAttribute("cy", y);
+      circle.setAttribute("r", "3.05");
+      circle.classList.add("point", "all");
+      circle.dataset.group = testIndices.has(index) ? "test" : "train";
+      pointLayer.appendChild(circle);
+      return circle;
+    });
+
+    let currentStep = 0;
+    let splitTimers = [];
+    let playTimer = null;
+    let playing = false;
+
+    function clearSplitTimers() {
+      splitTimers.forEach(window.clearTimeout);
+      splitTimers = [];
+    }
+
+    function setPointState(circle, group, options = {}) {
+      circle.classList.remove("all", "train", "test", "dimmed", "emphasis");
+      circle.classList.add(group);
+      if (options.dimmed) circle.classList.add("dimmed");
+      if (options.emphasis) circle.classList.add("emphasis");
+    }
+
+    function setLegend(allVisible, trainingVisible, testVisible, trainCount = 80, testCount = 20) {
+      legendAll.style.opacity = allVisible ? "1" : "0";
+      legendTrain.style.opacity = trainingVisible ? "1" : "0";
+      legendTest.style.opacity = testVisible ? "1" : "0";
+      trainLegendText.textContent = `Training set: ${trainCount}`;
+      testLegendText.textContent = `Test set: ${testCount}`;
+    }
+
+    function animateSplit() {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      circles.forEach(circle => setPointState(circle, "all"));
+      setLegend(false, true, true, 0, 0);
+
+      if (reduceMotion) {
+        circles.forEach(circle => setPointState(circle, circle.dataset.group));
+        setLegend(false, true, true, 80, 20);
+        return;
+      }
+
+      let trainCount = 0;
+      let testCount = 0;
+      assignmentOrder.forEach((pointIndex, orderIndex) => {
+        const timer = window.setTimeout(() => {
+          const circle = circles[pointIndex];
+          const group = circle.dataset.group;
+          setPointState(circle, group);
+          if (group === "train") trainCount += 1;
+          else testCount += 1;
+          trainLegendText.textContent = `Training set: ${trainCount}`;
+          testLegendText.textContent = `Test set: ${testCount}`;
+        }, 140 + orderIndex * 19);
+        splitTimers.push(timer);
+      });
+    }
+
+    function renderStep(step, animate = true) {
+      clearSplitTimers();
+      currentStep = Math.max(0, Math.min(3, step));
+      subtitle.textContent = subtitles[currentStep];
+      trainCallout.classList.remove("visible");
+      testCallout.classList.remove("visible");
+
+      if (currentStep === 0) {
+        circles.forEach(circle => setPointState(circle, "all"));
+        setLegend(true, false, false);
+      } else if (currentStep === 1) {
+        if (animate) animateSplit();
+        else {
+          circles.forEach(circle => setPointState(circle, circle.dataset.group));
+          setLegend(false, true, true);
+        }
+      } else if (currentStep === 2) {
+        circles.forEach(circle => {
+          const isTraining = circle.dataset.group === "train";
+          setPointState(circle, circle.dataset.group, { dimmed: !isTraining, emphasis: isTraining });
+        });
+        setLegend(false, true, true);
+        trainCallout.classList.add("visible");
+      } else {
+        circles.forEach(circle => {
+          const isTest = circle.dataset.group === "test";
+          setPointState(circle, circle.dataset.group, { dimmed: !isTest, emphasis: isTest });
+        });
+        setLegend(false, true, true);
+        testCallout.classList.add("visible");
+      }
+
+      stepButtons.forEach((button, index) => {
+        button.classList.toggle("active", index === currentStep);
+        button.classList.toggle("done", index < currentStep);
+        button.setAttribute("aria-selected", String(index === currentStep));
+      });
+      previousButton.disabled = currentStep === 0;
+      nextButton.disabled = currentStep === 3;
+    }
+
+    function stopPlayback() {
+      playing = false;
+      window.clearTimeout(playTimer);
+      playTimer = null;
+      playButton.textContent = "Play";
+      playButton.setAttribute("aria-label", "Play animation");
+    }
+
+    function scheduleNext() {
+      if (!playing) return;
+      const wait = currentStep === 1 ? 3300 : 2400;
+      playTimer = window.setTimeout(() => {
+        if (currentStep >= 3) {
+          stopPlayback();
+          return;
+        }
+        renderStep(currentStep + 1, true);
+        scheduleNext();
+      }, wait);
+    }
+
+    function togglePlayback() {
+      if (playing) {
+        stopPlayback();
+        return;
+      }
+      if (currentStep >= 3) renderStep(0, false);
+      playing = true;
+      playButton.textContent = "Pause";
+      playButton.setAttribute("aria-label", "Pause animation");
+      renderStep(currentStep + 1, true);
+      scheduleNext();
+    }
+
+    previousButton.addEventListener("click", () => {
+      stopPlayback();
+      renderStep(currentStep - 1, false);
+    });
+
+    nextButton.addEventListener("click", () => {
+      stopPlayback();
+      renderStep(currentStep + 1, true);
+    });
+
+    resetButton.addEventListener("click", () => {
+      stopPlayback();
+      renderStep(0, false);
+    });
+
+    playButton.addEventListener("click", togglePlayback);
+
+    stepButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        stopPlayback();
+        renderStep(Number(button.dataset.step), Number(button.dataset.step) === 1);
+      });
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        stopPlayback();
+        renderStep(currentStep + 1, true);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        stopPlayback();
+        renderStep(currentStep - 1, false);
+      } else if (event.code === "Space") {
+        event.preventDefault();
+        togglePlayback();
+      } else if (event.key.toLowerCase() === "r") {
+        stopPlayback();
+        renderStep(0, false);
+      } else if (event.key.toLowerCase() === "f") {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      }
+    });
+
+    renderStep(0, false);
+  </script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

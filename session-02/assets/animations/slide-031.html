@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+  <title>How an optimization algorithm learns</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18202a;
+      --muted: #66717e;
+      --blue: #2588ed;
+      --blue-dark: #116ec8;
+      --red: #ba2623;
+      --orange: #f1a12c;
+      --line: #dce2e8;
+      --soft: #f4f6f8;
+      --good: #11885b;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #fff;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    button, input { font: inherit; }
+
+    .lab {
+      width: min(1275px, 100vw, 222.125vh);
+      aspect-ratio: 1275 / 574;
+      margin: 0 auto;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.18fr) minmax(500px, .82fr);
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      gap: 10px 16px;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      grid-column: 1;
+      grid-row: 1 / -1;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fbfcfd;
+      box-shadow: 0 8px 28px rgba(31, 46, 61, .07);
+    }
+
+    .stage svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .target-ring { transition: opacity 300ms ease, fill 300ms ease, stroke 300ms ease; }
+
+    .distance-line {
+      stroke: var(--red);
+      stroke-width: 2.5;
+      stroke-dasharray: 8 7;
+      opacity: .75;
+      transition: opacity 250ms ease;
+    }
+
+    .trail-line {
+      fill: none;
+      stroke: var(--blue);
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      opacity: .26;
+      transition: opacity 250ms ease;
+    }
+
+    .target-center {
+      fill: var(--red);
+      stroke: #fff;
+      stroke-width: 3;
+      transition: opacity 250ms ease;
+    }
+
+    .ball-halo {
+      fill: rgba(37, 136, 237, .18);
+      transition: opacity 250ms ease;
+    }
+
+    .ball {
+      fill: var(--blue);
+      stroke: #fff;
+      stroke-width: 4;
+      filter: drop-shadow(0 3px 5px rgba(23, 55, 86, .22));
+      transition: fill 180ms ease, opacity 250ms ease;
+    }
+
+    .ball.trial { fill: var(--orange); }
+
+    .stage-label {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      z-index: 4;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .88);
+      border: 1px solid rgba(220, 226, 232, .9);
+      font-size: 13px;
+      font-weight: 650;
+      backdrop-filter: blur(4px);
+    }
+
+    .blind-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(103, 113, 126, .035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(103, 113, 126, .035) 1px, transparent 1px),
+        #eef1f4;
+      background-size: 30px 30px;
+      transition: opacity 300ms ease;
+    }
+
+    .blind-message {
+      padding: 13px 18px;
+      border: 1px solid #cbd2d9;
+      border-radius: 12px;
+      color: #68737e;
+      background: rgba(255, 255, 255, .82);
+      font-weight: 700;
+      letter-spacing: .01em;
+    }
+
+    .lab.algorithm-view .blind-layer { opacity: 1; }
+    .lab.algorithm-view .stage-label { z-index: 5; }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      grid-column: 2;
+      grid-row: 1;
+      min-height: 50px;
+      margin: 0;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .view-toggle strong { color: var(--ink); font-size: 14px; }
+
+    .switch {
+      position: relative;
+      width: 46px;
+      height: 26px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: #c9d0d7;
+      transition: background 180ms ease;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(24, 32, 42, .22);
+      transition: transform 180ms ease;
+    }
+
+    #algorithm-view { position: absolute; opacity: 0; pointer-events: none; }
+    #algorithm-view:checked + .switch { background: var(--blue); }
+    #algorithm-view:checked + .switch::after { transform: translateX(20px); }
+
+    .controls {
+      display: grid;
+      grid-column: 2;
+      grid-row: 2;
+      gap: 6px;
+    }
+
+    .control {
+      display: grid;
+      grid-template-columns: 96px 34px minmax(0, 1fr) 34px 44px;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .control label { font-size: 14px; font-weight: 700; }
+    .control output {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 650;
+    }
+
+    input[type="range"] {
+      appearance: none;
+      width: 100%;
+      height: 28px;
+      margin: 0;
+      outline: none;
+      background: linear-gradient(var(--line), var(--line)) center / 100% 3px no-repeat;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--blue);
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(24, 32, 42, .16);
+    }
+
+    input[type="range"]::-moz-range-track { height: 3px; background: var(--line); }
+    input[type="range"]::-moz-range-thumb {
+      width: 15px;
+      height: 15px;
+      border: 3px solid var(--blue);
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    input[type="range"]:disabled { opacity: .58; }
+
+    .nudge {
+      width: 34px;
+      min-height: 34px;
+      padding: 0;
+      border-radius: 9px;
+      color: var(--blue-dark);
+      border-color: rgba(37, 136, 237, .28);
+      background: rgba(37, 136, 237, .07);
+      font-size: 21px;
+      line-height: 1;
+    }
+
+    .nudge:hover { background: rgba(37, 136, 237, .13); }
+
+    .error-card {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 14px;
+      grid-column: 2;
+      grid-row: 3;
+      margin: 0;
+      padding: 10px 13px;
+      border-radius: 14px;
+      background: #fff5f4;
+      border: 1px solid rgba(186, 38, 35, .16);
+    }
+
+    .error-card strong { font-size: 15px; }
+
+    .error-track {
+      height: 13px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(186, 38, 35, .12);
+    }
+
+    .error-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--red);
+      transition: width 180ms ease;
+    }
+
+    .error-value {
+      min-width: 62px;
+      color: var(--red);
+      text-align: right;
+      font-size: 21px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .algorithm-card {
+      min-height: 0;
+      grid-column: 2;
+      grid-row: 4;
+      margin: 0;
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--soft);
+    }
+
+    .algorithm-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 5px;
+    }
+
+    .algorithm-heading strong { font-size: 14px; }
+    .iteration { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+    .direction-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin: 7px 0 8px;
+    }
+
+    .direction-item {
+      min-width: 0;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .direction-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .probe-errors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 6px;
+    }
+
+    .probe-error {
+      display: flex;
+      justify-content: space-between;
+      gap: 7px;
+      padding: 5px 6px;
+      border-radius: 7px;
+      color: var(--muted);
+      background: var(--soft);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .probe-error output {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    .direction-badge {
+      min-width: 104px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--soft);
+      text-align: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .direction-badge.increase { color: #086946; background: #e4f6ef; }
+    .direction-badge.decrease { color: #a34909; background: #fff0df; }
+    .direction-badge.keep { color: #59636e; background: #e9edf1; }
+    .direction-badge.testing { color: var(--blue-dark); background: #e6f2fd; }
+
+    .status { min-height: 38px; color: #394553; font-size: 13px; line-height: 1.4; }
+    .status .good { color: var(--good); font-weight: 750; }
+    .status .bad { color: var(--red); font-weight: 750; }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1.25fr 1.2fr 1fr .7fr;
+      grid-column: 2;
+      grid-row: 5;
+      gap: 8px;
+      margin: 0;
+    }
+
+    button {
+      min-height: 38px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--ink);
+      background: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .actions button { font-size: 13px; }
+
+    button:hover { background: #f8fafb; }
+    button:focus-visible { outline: 3px solid rgba(37, 136, 237, .25); outline-offset: 2px; }
+    button.primary { border-color: var(--blue); color: #fff; background: var(--blue); }
+    button.primary:hover { background: var(--blue-dark); }
+    button:disabled { opacity: .52; cursor: default; }
+
+    @media (max-width: 900px) {
+      body {
+        display: block;
+        min-height: 100%;
+        padding: 12px;
+        overflow: auto;
+      }
+
+      .lab {
+        display: block;
+        width: min(680px, 100%);
+        aspect-ratio: auto;
+        padding: 0;
+      }
+
+      .stage {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4 / 3;
+      }
+
+      .view-toggle { margin: 12px 0 16px; }
+      .controls { gap: 14px; }
+      .error-card { margin-top: 18px; padding: 15px 16px; }
+      .algorithm-card { margin-top: 12px; padding: 14px 16px; }
+      .actions { margin-top: 12px; }
+    }
+
+    @media (max-width: 520px) {
+      body { padding: 10px; }
+      .stage { border-radius: 13px; }
+      .control { grid-template-columns: 82px 34px minmax(0, 1fr) 34px 40px; gap: 6px; }
+      .nudge { width: 34px; min-height: 34px; }
+      .error-card { grid-template-columns: auto 1fr; }
+      .error-track { grid-column: 1 / -1; grid-row: 2; }
+      .actions { grid-template-columns: 1fr 1fr; }
+      .direction-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main id="lab" class="lab">
+    <section class="stage" aria-label="Optimization target">
+      <span id="stage-label" class="stage-label">You can see the target</span>
+      <svg viewBox="0 0 640 480" role="img" aria-labelledby="title description">
+        <title id="title">Ball moving toward the center of a target</title>
+        <desc id="description">The ball position is controlled by two parameters. Its error is its distance from the center.</desc>
+        <rect width="640" height="480" fill="#fbfcfd"/>
+        <g id="target" aria-hidden="true">
+          <circle class="target-ring" cx="445" cy="156" r="150" fill="#f7dddd" stroke="#efc4c3" stroke-width="2"/>
+          <circle class="target-ring" cx="445" cy="156" r="120" fill="#fff" stroke="#e1e6ea" stroke-width="2"/>
+          <circle class="target-ring" cx="445" cy="156" r="90" fill="#f3baba" stroke="#e79997" stroke-width="2"/>
+          <circle class="target-ring" cx="445" cy="156" r="60" fill="#fff" stroke="#e1e6ea" stroke-width="2"/>
+          <circle class="target-ring" cx="445" cy="156" r="30" fill="#dc6662" stroke="#c94a46" stroke-width="2"/>
+          <circle class="target-center" cx="445" cy="156" r="7"/>
+        </g>
+        <path id="trail" class="trail-line" d=""/>
+        <line id="distance-line" class="distance-line" x1="445" y1="156" x2="127" y2="358"/>
+        <g id="ball-group" transform="translate(127 358)">
+          <circle class="ball-halo" r="21"/>
+          <circle id="ball" class="ball" r="12"/>
+        </g>
+      </svg>
+      <div class="blind-layer" aria-hidden="true">
+        <div class="blind-message">No visual information</div>
+      </div>
+    </section>
+
+    <label class="view-toggle" for="algorithm-view">
+      <span><strong>Show what the algorithm sees</strong><br><small>Only parameter values and error</small></span>
+      <input id="algorithm-view" type="checkbox" role="switch" aria-label="Show what the algorithm sees">
+      <span class="switch" aria-hidden="true"></span>
+    </label>
+
+    <section class="controls" aria-label="Parameters">
+      <div class="control">
+        <label for="parameter-x">Parameter x</label>
+        <button class="nudge" type="button" data-axis="x" data-delta="-5" aria-label="Decrease parameter x by 5">−</button>
+        <input id="parameter-x" type="range" min="0" max="100" step="1" value="16">
+        <button class="nudge" type="button" data-axis="x" data-delta="5" aria-label="Increase parameter x by 5">+</button>
+        <output id="value-x" for="parameter-x">16</output>
+      </div>
+      <div class="control">
+        <label for="parameter-y">Parameter y</label>
+        <button class="nudge" type="button" data-axis="y" data-delta="-5" aria-label="Decrease parameter y by 5">−</button>
+        <input id="parameter-y" type="range" min="0" max="100" step="1" value="22">
+        <button class="nudge" type="button" data-axis="y" data-delta="5" aria-label="Increase parameter y by 5">+</button>
+        <output id="value-y" for="parameter-y">22</output>
+      </div>
+    </section>
+
+    <section class="error-card" aria-live="polite">
+      <strong>Error</strong>
+      <div class="error-track" aria-hidden="true"><div id="error-fill" class="error-fill"></div></div>
+      <output id="error-value" class="error-value">0.0</output>
+    </section>
+
+    <section class="algorithm-card" aria-live="polite">
+      <div class="algorithm-heading">
+        <strong>Optimization algorithm</strong>
+        <span id="iteration" class="iteration">Iteration 0</span>
+      </div>
+      <div class="direction-grid" aria-label="Estimated parameter directions">
+        <div class="direction-item">
+          <div class="direction-main"><span>Parameter x</span><output id="direction-x" class="direction-badge">Not determined</output></div>
+          <div class="probe-errors">
+            <span class="probe-error"><span>Increase</span><output id="x-plus-error">—</output></span>
+            <span class="probe-error"><span>Decrease</span><output id="x-minus-error">—</output></span>
+          </div>
+        </div>
+        <div class="direction-item">
+          <div class="direction-main"><span>Parameter y</span><output id="direction-y" class="direction-badge">Not determined</output></div>
+          <div class="probe-errors">
+            <span class="probe-error"><span>Increase</span><output id="y-plus-error">—</output></span>
+            <span class="probe-error"><span>Decrease</span><output id="y-minus-error">—</output></span>
+          </div>
+        </div>
+      </div>
+      <div id="status" class="status">Estimate the best direction for x and y, then update both parameters together.</div>
+    </section>
+
+    <div class="actions">
+      <button id="determine-directions" type="button">Determine directions</button>
+      <button id="update-parameters" type="button" disabled>Update parameters</button>
+      <button id="auto" class="primary" type="button">Auto-learn</button>
+      <button id="reset" type="button">Reset</button>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const lab = document.getElementById("lab");
+      const xInput = document.getElementById("parameter-x");
+      const yInput = document.getElementById("parameter-y");
+      const xOutput = document.getElementById("value-x");
+      const yOutput = document.getElementById("value-y");
+      const errorOutput = document.getElementById("error-value");
+      const errorFill = document.getElementById("error-fill");
+      const ballGroup = document.getElementById("ball-group");
+      const ball = document.getElementById("ball");
+      const distanceLine = document.getElementById("distance-line");
+      const trail = document.getElementById("trail");
+      const viewToggle = document.getElementById("algorithm-view");
+      const stageLabel = document.getElementById("stage-label");
+      const status = document.getElementById("status");
+      const iterationOutput = document.getElementById("iteration");
+      const xDirectionOutput = document.getElementById("direction-x");
+      const yDirectionOutput = document.getElementById("direction-y");
+      const xPlusErrorOutput = document.getElementById("x-plus-error");
+      const xMinusErrorOutput = document.getElementById("x-minus-error");
+      const yPlusErrorOutput = document.getElementById("y-plus-error");
+      const yMinusErrorOutput = document.getElementById("y-minus-error");
+      const determineButton = document.getElementById("determine-directions");
+      const updateButton = document.getElementById("update-parameters");
+      const autoButton = document.getElementById("auto");
+      const resetButton = document.getElementById("reset");
+      const nudgeButtons = Array.from(document.querySelectorAll(".nudge"));
+
+      const initial = { x: 16, y: 22 };
+      const target = { x: 72, y: 70 };
+      const bounds = { left: 36, right: 604, top: 30, bottom: 450 };
+      const maxError = Math.hypot(100, 100);
+      let position = { ...initial };
+      let stepSize = 5;
+      let iteration = 0;
+      let busy = false;
+      let autoRunning = false;
+      let pendingDirections = null;
+      let trailPoints = [];
+
+      const sleep = milliseconds => new Promise(resolve => window.setTimeout(resolve, milliseconds));
+      const clamp = value => Math.max(0, Math.min(100, value));
+      const errorAt = point => Math.hypot(point.x - target.x, point.y - target.y);
+      const screenPoint = point => ({
+        x: bounds.left + point.x / 100 * (bounds.right - bounds.left),
+        y: bounds.bottom - point.y / 100 * (bounds.bottom - bounds.top)
+      });
+
+      function draw(point = position, trial = false) {
+        const screen = screenPoint(point);
+        const targetScreen = screenPoint(target);
+        const error = errorAt(point);
+
+        ballGroup.setAttribute("transform", `translate(${screen.x.toFixed(2)} ${screen.y.toFixed(2)})`);
+        ball.classList.toggle("trial", trial);
+        distanceLine.setAttribute("x1", targetScreen.x);
+        distanceLine.setAttribute("y1", targetScreen.y);
+        distanceLine.setAttribute("x2", screen.x);
+        distanceLine.setAttribute("y2", screen.y);
+        xInput.value = String(Math.round(point.x));
+        yInput.value = String(Math.round(point.y));
+        xOutput.value = String(Math.round(point.x));
+        yOutput.value = String(Math.round(point.y));
+        xOutput.textContent = String(Math.round(point.x));
+        yOutput.textContent = String(Math.round(point.y));
+        errorOutput.value = error.toFixed(1);
+        errorOutput.textContent = error.toFixed(1);
+        errorFill.style.width = `${Math.min(100, error / maxError * 100).toFixed(2)}%`;
+      }
+
+      function updateTrail() {
+        if (!trailPoints.length) {
+          trail.setAttribute("d", "");
+          return;
+        }
+        const points = trailPoints.map(screenPoint);
+        trail.setAttribute("d", points.map((p, i) => `${i ? "L" : "M"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" "));
+      }
+
+      function commit(point) {
+        position = { x: Math.round(point.x), y: Math.round(point.y) };
+        const last = trailPoints[trailPoints.length - 1];
+        if (!last || last.x !== position.x || last.y !== position.y) {
+          trailPoints.push({ ...position });
+          updateTrail();
+        }
+        draw(position, false);
+      }
+
+      function setDirectionOutput(output, direction, testing = false) {
+        output.className = "direction-badge";
+        if (testing) {
+          output.textContent = "Testing…";
+          output.classList.add("testing");
+        } else if (direction > 0) {
+          output.textContent = "Increase (+)";
+          output.classList.add("increase");
+        } else if (direction < 0) {
+          output.textContent = "Decrease (−)";
+          output.classList.add("decrease");
+        } else if (direction === 0) {
+          output.textContent = "Keep (=)";
+          output.classList.add("keep");
+        } else {
+          output.textContent = "Not determined";
+        }
+      }
+
+      function clearDirections() {
+        pendingDirections = null;
+        setDirectionOutput(xDirectionOutput, null);
+        setDirectionOutput(yDirectionOutput, null);
+        clearProbeErrors();
+      }
+
+      function clearProbeErrors() {
+        [xPlusErrorOutput, xMinusErrorOutput, yPlusErrorOutput, yMinusErrorOutput]
+          .forEach(output => { output.textContent = "—"; });
+      }
+
+      function refreshControls() {
+        const locked = busy || autoRunning;
+        const hasDirections = pendingDirections !== null;
+        xInput.disabled = locked || hasDirections;
+        yInput.disabled = locked || hasDirections;
+        determineButton.disabled = locked || hasDirections;
+        updateButton.disabled = locked || !hasDirections;
+        resetButton.disabled = locked;
+        nudgeButtons.forEach(button => { button.disabled = locked || hasDirections; });
+        autoButton.disabled = busy && !autoRunning;
+      }
+
+      async function determineDirections(delay = 520) {
+        clearProbeErrors();
+        const base = { ...position };
+        const baseError = errorAt(base);
+        const returnDelay = Math.max(180, Math.round(delay * .55));
+        iteration += 1;
+        iterationOutput.textContent = `Iteration ${iteration}`;
+
+        setDirectionOutput(xDirectionOutput, null, true);
+        setDirectionOutput(yDirectionOutput, null);
+        const xPlus = { ...base, x: clamp(base.x + stepSize) };
+        const xMinus = { ...base, x: clamp(base.x - stepSize) };
+        status.textContent = `1. Estimate x direction: try x + ${stepSize}…`;
+        draw(xPlus, true);
+        await sleep(delay);
+        const xPlusError = errorAt(xPlus);
+        xPlusErrorOutput.textContent = xPlusError.toFixed(1);
+        status.textContent = "Return to the starting position…";
+        draw(base, false);
+        await sleep(returnDelay);
+        status.textContent = `1. Estimate x direction: try x − ${stepSize}…`;
+        draw(xMinus, true);
+        await sleep(delay);
+        const xMinusError = errorAt(xMinus);
+        xMinusErrorOutput.textContent = xMinusError.toFixed(1);
+        status.textContent = "Return to the starting position…";
+        draw(base, false);
+        await sleep(returnDelay);
+        const xDirection = Math.min(xPlusError, xMinusError) < baseError - .0001
+          ? (xPlusError <= xMinusError ? 1 : -1)
+          : 0;
+        setDirectionOutput(xDirectionOutput, xDirection);
+
+        setDirectionOutput(yDirectionOutput, null, true);
+        const yPlus = { ...base, y: clamp(base.y + stepSize) };
+        const yMinus = { ...base, y: clamp(base.y - stepSize) };
+        status.textContent = `2. Estimate y direction: try y + ${stepSize}…`;
+        draw(yPlus, true);
+        await sleep(delay);
+        const yPlusError = errorAt(yPlus);
+        yPlusErrorOutput.textContent = yPlusError.toFixed(1);
+        status.textContent = "Return to the starting position…";
+        draw(base, false);
+        await sleep(returnDelay);
+        status.textContent = `2. Estimate y direction: try y − ${stepSize}…`;
+        draw(yMinus, true);
+        await sleep(delay);
+        const yMinusError = errorAt(yMinus);
+        yMinusErrorOutput.textContent = yMinusError.toFixed(1);
+        status.textContent = "Return to the starting position…";
+        draw(base, false);
+        await sleep(returnDelay);
+        const yDirection = Math.min(yPlusError, yMinusError) < baseError - .0001
+          ? (yPlusError <= yMinusError ? 1 : -1)
+          : 0;
+        setDirectionOutput(yDirectionOutput, yDirection);
+
+        if (xDirection === 0 && yDirection === 0) {
+          if (baseError < .75) {
+            status.innerHTML = '<span class="good">Optimization complete.</span> Increasing or decreasing either parameter raises the error.';
+            return false;
+          }
+          if (stepSize > 1) {
+            stepSize = Math.max(1, Math.floor(stepSize / 2));
+            status.innerHTML = `No direction reduces the error. <span class="good">Reduce the step size to ${stepSize}</span> and estimate again.`;
+            return true;
+          }
+          status.innerHTML = '<span class="good">Optimization complete.</span> No direction reduces the error.';
+          return false;
+        }
+
+        pendingDirections = { base, baseError, xDirection, yDirection, step: stepSize };
+        status.innerHTML = 'Directions determined. <span class="good">Now update both parameters together.</span>';
+        return true;
+      }
+
+      async function updateParameters(delay = 420) {
+        if (!pendingDirections) return false;
+        const { base, baseError, xDirection, yDirection, step } = pendingDirections;
+        status.innerHTML = 'Updating x and y <span class="good">together</span>…';
+        await sleep(delay);
+        const updated = {
+          x: clamp(base.x + xDirection * step),
+          y: clamp(base.y + yDirection * step)
+        };
+        commit(updated);
+        pendingDirections = null;
+        status.innerHTML = `Both parameters updated: error ${baseError.toFixed(1)} → ${errorAt(updated).toFixed(1)}. <span class="good">Repeat.</span>`;
+        return true;
+      }
+
+      async function runDetermine() {
+        if (busy || autoRunning || pendingDirections) return;
+        busy = true;
+        refreshControls();
+        await determineDirections(1000);
+        busy = false;
+        refreshControls();
+      }
+
+      async function runUpdate() {
+        if (busy || autoRunning || !pendingDirections) return;
+        busy = true;
+        refreshControls();
+        await updateParameters(520);
+        busy = false;
+        refreshControls();
+      }
+
+      async function runAuto() {
+        if (busy || autoRunning) return;
+        busy = true;
+        autoRunning = true;
+        refreshControls();
+        autoButton.textContent = "Pause";
+
+        while (autoRunning && iteration < 500) {
+          if (!pendingDirections) {
+            const continued = await determineDirections(iteration < 12 ? 500 : 280);
+            if (!continued) break;
+          }
+          if (!autoRunning) break;
+          if (!pendingDirections) {
+            await sleep(120);
+            continue;
+          }
+          const continued = await updateParameters(iteration < 12 ? 250 : 110);
+          if (!continued) break;
+          await sleep(iteration < 12 ? 130 : 55);
+        }
+
+        autoRunning = false;
+        busy = false;
+        autoButton.textContent = "Auto-learn";
+        refreshControls();
+      }
+
+      function reset() {
+        busy = false;
+        autoRunning = false;
+        position = { ...initial };
+        stepSize = 5;
+        iteration = 0;
+        clearDirections();
+        trailPoints = [{ ...position }];
+        iterationOutput.textContent = "Iteration 0";
+        status.textContent = "Estimate the best direction for x and y, then update both parameters together.";
+        autoButton.textContent = "Auto-learn";
+        refreshControls();
+        updateTrail();
+        draw();
+      }
+
+      function handleManualChange() {
+        if (busy || autoRunning) return;
+        position = { x: Number(xInput.value), y: Number(yInput.value) };
+        trailPoints = [{ ...position }];
+        updateTrail();
+        iteration = 0;
+        stepSize = 5;
+        clearDirections();
+        iterationOutput.textContent = "Iteration 0";
+        status.textContent = "Parameters changed manually. The error is recalculated immediately.";
+        refreshControls();
+        draw();
+      }
+
+      xInput.addEventListener("input", handleManualChange);
+      yInput.addEventListener("input", handleManualChange);
+      nudgeButtons.forEach(button => {
+        button.addEventListener("click", () => {
+          if (busy || autoRunning || pendingDirections) return;
+          const input = button.dataset.axis === "x" ? xInput : yInput;
+          input.value = String(clamp(Number(input.value) + Number(button.dataset.delta)));
+          handleManualChange();
+        });
+      });
+      determineButton.addEventListener("click", runDetermine);
+      updateButton.addEventListener("click", runUpdate);
+      autoButton.addEventListener("click", () => {
+        if (autoRunning) {
+          autoRunning = false;
+          autoButton.textContent = "Auto-learn";
+          refreshControls();
+        } else {
+          runAuto();
+        }
+      });
+      resetButton.addEventListener("click", reset);
+      viewToggle.addEventListener("change", () => {
+        lab.classList.toggle("algorithm-view", viewToggle.checked);
+        stageLabel.textContent = viewToggle.checked ? "What the algorithm sees" : "You can see the target";
+      });
+
+      reset();
+    })();
+  </script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

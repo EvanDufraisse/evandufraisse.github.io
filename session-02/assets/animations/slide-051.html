@@ -1,0 +1,312 @@
+<meta charset="utf-8">
+<div id="model-comparison-animation" class="model-comparison-animation">
+  <style>
+    #model-comparison-animation {
+      --mca-bg: var(--background, #ffffff);
+      --mca-fg: var(--foreground, #172033);
+      --mca-muted: var(--muted-foreground, #667085);
+      --mca-grid: var(--border, #e3e7ee);
+      --mca-all: #a5b2c4;
+      --mca-train: var(--viz-series-1, #2e6fd8);
+      --mca-test: var(--viz-series-2, #e7835d);
+      --mca-model: var(--viz-series-1, #2e6fd8);
+      width: 100%;
+      color: var(--mca-fg);
+      background: var(--mca-bg);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #model-comparison-animation .mca-stage { width: 100%; aspect-ratio: 1200 / 600; }
+    #model-comparison-animation .mca-chart { display: block; width: 100%; height: 100%; overflow: visible; }
+    #model-comparison-animation .mca-chart text { fill: var(--mca-fg); font-family: inherit; }
+    #model-comparison-animation .mca-chart .muted { fill: var(--mca-muted); }
+    #model-comparison-animation .grid { stroke: var(--mca-grid); stroke-width: 1; }
+    #model-comparison-animation .axis { stroke: var(--mca-grid); stroke-width: 1.2; }
+    #model-comparison-animation .point { transition: fill 520ms ease, opacity 520ms ease, r 360ms ease; }
+    #model-comparison-animation .residual { stroke: var(--mca-test); stroke-width: 1.15; opacity: 0; transition: opacity 420ms ease; }
+    #model-comparison-animation .model-line { fill: none; stroke: var(--mca-model); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    #model-comparison-animation .metric { opacity: 0; transition: opacity 420ms ease 220ms; }
+    #model-comparison-animation .mca-controls { display: flex; justify-content: center; align-items: center; gap: .5rem; flex-wrap: wrap; padding-top: .35rem; }
+    #model-comparison-animation .mca-stepdots { display: flex; gap: .35rem; }
+    #model-comparison-animation .mca-stepdots button { width: .7rem; height: .7rem; min-width: 0; padding: 0; border-radius: 50%; background: var(--mca-grid); border: 0; }
+    #model-comparison-animation .mca-stepdots button[aria-current="step"] { background: var(--mca-fg); }
+    @media (prefers-reduced-motion: reduce) {
+      #model-comparison-animation * { transition-duration: 0ms !important; animation-duration: 0ms !important; }
+    }
+  </style>
+
+  <div class="mca-stage">
+    <svg class="mca-chart" viewBox="0 0 1200 600" role="img" aria-labelledby="mca-title mca-desc">
+      <title id="mca-title">Synchronized comparison of three fitted models</title>
+      <desc id="mca-desc">Linear regression, a degree-five polynomial, and a zero-training-error model are fitted to the same eighty training observations and evaluated on the same twenty test observations.</desc>
+      <defs id="mca-defs"></defs>
+      <text x="48" y="48" font-size="29" font-weight="500">Comparing three models</text>
+      <text id="mca-phase" x="48" y="73" font-size="15" class="muted">All 100 observations</text>
+      <g id="mca-legend" transform="translate(48 99)"></g>
+      <g id="mca-panels"></g>
+    </svg>
+  </div>
+
+  <div class="mca-controls viz-controls" aria-label="Animation controls">
+    <button type="button" class="btn" data-action="previous" aria-label="Previous step">Previous</button>
+    <button type="button" class="btn btn-primary" data-action="play" aria-pressed="false">Play</button>
+    <button type="button" class="btn" data-action="next" aria-label="Next step">Next</button>
+    <span class="mca-stepdots" aria-label="Select step"></span>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+    const root = document.getElementById("model-comparison-animation");
+    if (!root) return;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const xValues = [9.182,9.198,9.337,9.619,10.465,10.518,10.685,10.853,11.98,12.239,13.834,14.578,15.366,15.844,16.113,16.595,17.17,17.326,17.545,18.341,18.4,18.63,19.424,19.598,20.473,21.192,21.474,21.578,21.987,23.117,23.281,23.548,24.271,25.284,25.436,25.936,26.293,26.341,27.687,28.673,29.195,29.673,29.739,30.025,30.448,31.801,32.011,33.863,34.326,35.157,35.58,35.955,35.964,36.126,36.86,36.913,37.522,37.596,38.192,38.432,39.04,39.967,40.003,40.425,40.919,42.696,42.757,42.981,43.044,43.203,43.991,44.647,45.531,45.996,49.049,49.753,49.88,51.359,51.364,52.922,53.195,54.798,55.57,55.988,57.083,57.711,57.786,59.686,61.792,61.799,61.822,61.874,62.278,62.882,63.069,63.383,63.661,64.019,64.636,64.653];
+    const yValues = [14.722,13.078,8.995,15.572,18.036,17.282,4.5,14.509,14.738,12.822,13.163,15.411,16.434,11.632,14.997,13.509,11.839,15.807,12.54,8.567,12.876,8.598,18.229,14.071,18.802,8.384,21.244,17.3,11.725,23.278,13.616,12.189,15.886,18.212,19.895,25.23,14.129,10.818,18.749,13.55,13.531,18.233,23.121,15.572,16.133,18.511,18.181,24.154,20.519,16.431,29.472,19.028,15.423,23.415,21.865,23.934,21.745,22.168,22.992,25.688,15.069,23.811,23.397,31.34,21.288,29.286,28.265,22.678,27.24,28.35,30.231,29.33,26.452,28.899,26.777,26.263,27.948,28.074,27.652,37.5,25.636,34.407,35.119,29.925,39.688,31.881,36.157,30.976,33.837,35.813,39.769,40,34.864,40,37.775,40,40,40,40,34.644];
+    const testIndices = new Set([0,3,5,20,22,24,37,43,49,54,55,56,62,63,66,69,77,90,91,96]);
+    const points = xValues.map((x, i) => ({ x: x, y: yValues[i], test: testIndices.has(i) }));
+    const train = points.filter(p => !p.test);
+    const test = points.filter(p => p.test);
+    const el = (name, attrs, parent) => {
+      const node = document.createElementNS(svgNS, name);
+      Object.keys(attrs || {}).forEach(key => node.setAttribute(key, String(attrs[key])));
+      if (parent) parent.appendChild(node);
+      return node;
+    };
+    const solve = (a, b) => {
+      const n = b.length;
+      const m = a.map((row, i) => row.slice().concat(b[i]));
+      for (let col = 0; col < n; col++) {
+        let pivot = col;
+        for (let row = col + 1; row < n; row++) if (Math.abs(m[row][col]) > Math.abs(m[pivot][col])) pivot = row;
+        [m[col], m[pivot]] = [m[pivot], m[col]];
+        const divisor = Math.abs(m[col][col]) < 1e-12 ? 1e-12 : m[col][col];
+        for (let j = col; j <= n; j++) m[col][j] /= divisor;
+        for (let row = 0; row < n; row++) if (row !== col) {
+          const factor = m[row][col];
+          for (let j = col; j <= n; j++) m[row][j] -= factor * m[col][j];
+        }
+      }
+      return m.map(row => row[n]);
+    };
+    const fitPolynomial = degree => {
+      const norm = x => (x - 37) / 29;
+      const size = degree + 1;
+      const a = Array.from({ length: size }, () => Array(size).fill(0));
+      const b = Array(size).fill(0);
+      train.forEach(p => {
+        const z = norm(p.x);
+        const powers = Array.from({ length: size * 2 }, (_, i) => Math.pow(z, i));
+        for (let i = 0; i < size; i++) {
+          b[i] += p.y * powers[i];
+          for (let j = 0; j < size; j++) a[i][j] += powers[i + j];
+        }
+      });
+      const coefficients = solve(a, b);
+      return x => coefficients.reduce((sum, value, i) => sum + value * Math.pow(norm(x), i), 0);
+    };
+    const degree5 = fitPolynomial(5);
+    const fitRbf = () => {
+      const sigma = 0.25;
+      const kernel = (a, b) => Math.exp(-Math.pow((a - b) / sigma, 2));
+      const matrix = train.map((p, i) => train.map((q, j) => kernel(p.x, q.x) + (i === j ? 1e-9 : 0)));
+      const residuals = train.map(p => p.y - degree5(p.x));
+      const weights = solve(matrix, residuals);
+      return x => degree5(x) + train.reduce((sum, p, i) => sum + weights[i] * kernel(x, p.x), 0);
+    };
+    const methods = [
+      { title: "Linear regression", predict: fitPolynomial(1) },
+      { title: "Degree-5 polynomial", predict: degree5 },
+      { title: "Zero training error", predict: fitRbf() }
+    ];
+    const panelXs = [20, 420, 820];
+    const panelWidth = 360;
+    const plotTop = 185;
+    const plotHeight = 300;
+    const plotWidth = 328;
+    const xMin = 8;
+    const xMax = 66;
+    const yMin = 0;
+    const yMax = 45;
+    const defs = root.querySelector("#mca-defs");
+    const panelsGroup = root.querySelector("#mca-panels");
+    const panels = [];
+    const averageError = (data, predict) => data.reduce((sum, p) => sum + Math.abs(predict(p.x) - p.y), 0) / data.length;
+
+    methods.forEach((method, index) => {
+      const panelX = panelXs[index];
+      const plotLeft = panelX + 32;
+      const sx = x => plotLeft + (x - xMin) / (xMax - xMin) * plotWidth;
+      const sy = y => plotTop + plotHeight - (y - yMin) / (yMax - yMin) * plotHeight;
+      const clip = el("clipPath", { id: "mca-clip-" + index }, defs);
+      el("rect", { x: plotLeft, y: plotTop, width: plotWidth, height: plotHeight }, clip);
+      const group = el("g", { "data-panel": index }, panelsGroup);
+      const title = el("text", { x: plotLeft, y: 137, "font-size": 18, "font-weight": 500 }, group);
+      title.textContent = method.title;
+      const metric = el("text", { x: plotLeft, y: 163, "font-size": 12.5, class: "muted metric" }, group);
+      metric.textContent = "Train avg. error: " + averageError(train, method.predict).toFixed(2) + "   ·   Test avg. error: " + averageError(test, method.predict).toFixed(2);
+
+      [10,20,30,40,50,60].forEach(value => {
+        el("line", { x1: sx(value), y1: plotTop, x2: sx(value), y2: plotTop + plotHeight, class: "grid" }, group);
+        const label = el("text", { x: sx(value), y: 504, "text-anchor": "middle", "font-size": 11.5, class: "muted" }, group);
+        label.textContent = value;
+      });
+      [0,10,20,30,40].forEach(value => {
+        el("line", { x1: plotLeft, y1: sy(value), x2: plotLeft + plotWidth, y2: sy(value), class: "grid" }, group);
+        const label = el("text", { x: plotLeft - 8, y: sy(value) + 4, "text-anchor": "end", "font-size": 11.5, class: "muted" }, group);
+        label.textContent = value;
+      });
+      el("rect", { x: plotLeft, y: plotTop, width: plotWidth, height: plotHeight, fill: "none", class: "axis" }, group);
+      const xLabel = el("text", { x: plotLeft + plotWidth / 2, y: 530, "text-anchor": "middle", "font-size": 13, "font-weight": 500 }, group);
+      xLabel.textContent = "Stem diameter";
+      if (index === 0) {
+        const yLabel = el("text", { x: 12, y: plotTop + plotHeight / 2, "text-anchor": "middle", "font-size": 13, "font-weight": 500, transform: "rotate(-90 12 " + (plotTop + plotHeight / 2) + ")" }, group);
+        yLabel.textContent = "Tree height";
+      }
+
+      const residualGroup = el("g", { "clip-path": "url(#mca-clip-" + index + ")" }, group);
+      test.forEach(p => el("line", { x1: sx(p.x), y1: sy(p.y), x2: sx(p.x), y2: sy(method.predict(p.x)), class: "residual" }, residualGroup));
+      const sampleXs = Array.from({ length: 321 }, (_, i) => xMin + i / 320 * (xMax - xMin));
+      const pathData = sampleXs.map((x, i) => (i ? "L" : "M") + sx(x).toFixed(2) + "," + sy(method.predict(x)).toFixed(2)).join(" ");
+      const modelPath = el("path", { d: pathData, class: "model-line", "clip-path": "url(#mca-clip-" + index + ")" }, group);
+      const pointGroup = el("g", { "clip-path": "url(#mca-clip-" + index + ")" }, group);
+      points.forEach(p => {
+        const circle = el("circle", { cx: sx(p.x), cy: sy(p.y), r: 2.3, class: "point" }, pointGroup);
+        circle.dataset.test = p.test ? "true" : "false";
+      });
+      const lineLength = modelPath.getTotalLength();
+      modelPath.style.strokeDasharray = String(lineLength);
+      modelPath.style.strokeDashoffset = String(lineLength);
+      modelPath.style.opacity = "0";
+      panels.push({ group: group, metric: metric, modelPath: modelPath, lineLength: lineLength });
+    });
+
+    const phase = root.querySelector("#mca-phase");
+    const legend = root.querySelector("#mca-legend");
+    const steps = [
+      { phase: "All 100 observations", legend: [["all", "All observations"]] },
+      { phase: "80% training · 20% test", legend: [["train", "Training"], ["test", "Test"]] },
+      { phase: "All three models fitted on the same training data", legend: [["train", "Training"], ["model", "Fitted models"]] },
+      { phase: "All three models evaluated on the same test data", legend: [["train", "Training"], ["test", "Test"], ["model", "Fitted models"]] }
+    ];
+    const colorFor = key => ({ all: "var(--mca-all)", train: "var(--mca-train)", test: "var(--mca-test)", model: "var(--mca-model)" })[key];
+    const renderLegend = items => {
+      legend.replaceChildren();
+      let x = 0;
+      items.forEach(item => {
+        if (item[0] === "model") el("line", { x1: x, y1: 0, x2: x + 14, y2: 0, stroke: colorFor(item[0]), "stroke-width": 3 }, legend);
+        else el("circle", { cx: x + 4, cy: 0, r: 4, fill: colorFor(item[0]) }, legend);
+        const label = el("text", { x: x + 19, y: 4, "font-size": 13, class: "muted" }, legend);
+        label.textContent = item[1];
+        x += item[1].length * 7.2 + 44;
+      });
+    };
+
+    let currentStep = 0;
+    let timer = null;
+    const dots = root.querySelector(".mca-stepdots");
+    steps.forEach((step, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("aria-label", "Go to step " + (index + 1));
+      button.addEventListener("click", () => { stop(); show(index); });
+      dots.appendChild(button);
+    });
+    const show = index => {
+      currentStep = Math.max(0, Math.min(steps.length - 1, index));
+      phase.textContent = steps[currentStep].phase;
+      renderLegend(steps[currentStep].legend);
+      panels.forEach(panel => {
+        panel.group.querySelectorAll(".point").forEach(circle => {
+          const isTest = circle.dataset.test === "true";
+          circle.style.fill = currentStep === 0 ? "var(--mca-all)" : (isTest ? "var(--mca-test)" : "var(--mca-train)");
+          circle.style.opacity = currentStep === 2 && isTest ? "0.08" : "1";
+          circle.setAttribute("r", currentStep === 3 && isTest ? "3.5" : "2.3");
+        });
+        const showModel = currentStep >= 2;
+        panel.modelPath.style.opacity = showModel ? "1" : "0";
+        panel.modelPath.style.transition = showModel ? "stroke-dashoffset 1050ms ease, opacity 250ms ease" : "none";
+        requestAnimationFrame(() => { panel.modelPath.style.strokeDashoffset = showModel ? "0" : String(panel.lineLength); });
+        panel.group.querySelectorAll(".residual").forEach(line => { line.style.opacity = currentStep === 3 ? "0.65" : "0"; });
+        panel.metric.style.opacity = currentStep === 3 ? "1" : "0";
+      });
+      Array.from(dots.children).forEach((dot, i) => {
+        if (i === currentStep) dot.setAttribute("aria-current", "step"); else dot.removeAttribute("aria-current");
+      });
+    };
+    const playButton = root.querySelector('[data-action="play"]');
+    const stop = () => {
+      if (timer) window.clearInterval(timer);
+      timer = null;
+      playButton.textContent = "Play";
+      playButton.setAttribute("aria-pressed", "false");
+    };
+    const play = () => {
+      stop();
+      if (currentStep === steps.length - 1) show(0);
+      playButton.textContent = "Pause";
+      playButton.setAttribute("aria-pressed", "true");
+      timer = window.setInterval(() => {
+        if (currentStep >= steps.length - 1) stop(); else show(currentStep + 1);
+      }, 2200);
+    };
+    root.querySelector('[data-action="previous"]').addEventListener("click", () => { stop(); show(currentStep - 1); });
+    root.querySelector('[data-action="next"]').addEventListener("click", () => { stop(); show(currentStep + 1); });
+    playButton.addEventListener("click", () => timer ? stop() : play());
+    root.addEventListener("keydown", event => {
+      if (event.key === "ArrowLeft") { stop(); show(currentStep - 1); }
+      if (event.key === "ArrowRight") { stop(); show(currentStep + 1); }
+      if (event.key === " ") { event.preventDefault(); timer ? stop() : play(); }
+    });
+    show(0);
+  }());
+  </script>
+</div>
+
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
