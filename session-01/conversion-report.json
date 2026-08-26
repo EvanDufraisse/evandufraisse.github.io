@@ -1,18 +1,16 @@
 {
   "source": "session-01-final.pptx",
-  "source_sha256": "6cd8b1e1d939f1d7af62078706a5af1522d42bd12273ebb86ddbbfb291ef7e25",
-  "slide_count": 31,
+  "source_sha256": "7ab2e25ef39ca0f9b9d5f582cc70861427a5208629612333d3a2e036c80aa23b",
+  "slide_count": 39,
   "semantic_slides": [
     1,
     2,
-    3,
     4,
     5,
     6,
     7,
     8,
     9,
-    10,
     11,
     12,
     13,
@@ -33,12 +31,54 @@
     28,
     29,
     30,
-    31
+    31,
+    32,
+    33,
+    37,
+    38,
+    39
   ],
-  "fallback_slides": [],
+  "fallback_slides": [
+    3,
+    10,
+    34,
+    35,
+    36
+  ],
   "iframe_slides": [],
-  "warnings": [],
-  "renderer": null,
-  "media_files": 21,
+  "warnings": [
+    {
+      "slide": 3,
+      "unsupported_features": [
+        "unsupported preset geometry: chevron"
+      ]
+    },
+    {
+      "slide": 10,
+      "unsupported_features": [
+        "unsupported preset geometry: rightBrace"
+      ]
+    },
+    {
+      "slide": 34,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 35,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 36,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    }
+  ],
+  "renderer": "powerpoint-quicklook",
+  "media_files": 25,
   "reveal_version": "6.0.1"
 }

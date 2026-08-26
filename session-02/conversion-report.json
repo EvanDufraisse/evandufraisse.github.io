@@ -1,7 +1,7 @@
 {
   "source": "session-02-final.pptx",
-  "source_sha256": "0bcef9157e86cc7c337d1b86911405eeca11f9bec101bc6393ec6f0323496476",
-  "slide_count": 62,
+  "source_sha256": "748360211db89399291abc7d4ee0788dd21ef10162bf723a2c6927d7593be6d0",
+  "slide_count": 58,
   "semantic_slides": [
     1,
     2,
@@ -32,15 +32,11 @@
     28,
     29,
     30,
-    31,
     32,
     33,
     34,
     35,
     36,
-    37,
-    38,
-    42,
     43,
     44,
     45,
@@ -56,41 +52,60 @@
     55,
     56,
     57,
-    58,
-    59,
-    60,
-    61,
-    62
+    58
   ],
   "fallback_slides": [
     15,
+    31,
+    37,
+    38,
     39,
     40,
-    41
+    41,
+    42
   ],
   "iframe_slides": [
-    31,
-    33,
+    25,
     34,
     35,
+    36,
     45,
     50,
     51,
     52,
     54,
-    58
+    57
   ],
   "warnings": [
     {
       "slide": 15,
       "unsupported_features": [
+        "forced raster fallback",
         "unsupported preset geometry: bentUpArrow"
+      ]
+    },
+    {
+      "slide": 31,
+      "unsupported_features": [
+        "forced raster fallback"
+      ]
+    },
+    {
+      "slide": 37,
+      "unsupported_features": [
+        "forced raster fallback"
+      ]
+    },
+    {
+      "slide": 38,
+      "unsupported_features": [
+        "forced raster fallback"
       ]
     },
     {
       "slide": 39,
       "unsupported_features": [
-        "unsupported object: cxnSp"
+        "forced raster fallback"
       ]
     },
     {
@@ -102,12 +117,18 @@
     {
       "slide": 41,
       "unsupported_features": [
+        "unsupported object: cxnSp"
+      ]
+    },
+    {
+      "slide": 42,
+      "unsupported_features": [
         "unsupported object: cxnSp",
         "unsupported preset geometry: rightArrow"
       ]
     }
   ],
   "renderer": "powerpoint-quicklook",
-  "media_files": 22,
+  "media_files": 25,
   "reveal_version": "6.0.1"
 }

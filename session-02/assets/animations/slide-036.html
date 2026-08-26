@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+  <title>Degree-5 tree-height model</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #fff; color: #1a1c1f; }
+    body { padding: 12px; font: 14px/1.45 Arial, Helvetica, sans-serif; -webkit-font-smoothing: antialiased; }
+    button, input { font: inherit; }
+    #poly-fit-lab { width: 100%; }
+    .chart { display: block; width: 100%; height: auto; overflow: visible; }
+    .grid line { stroke: rgba(26,28,31,.08); stroke-width: 1; }
+    .axes line { stroke: rgba(26,28,31,.5); stroke-width: 1.2; }
+    .axes text, .axis-label { fill: rgba(26,28,31,.58); font: 13px Arial, Helvetica, sans-serif; }
+    .residuals line { stroke: #ba2623; stroke-width: 2; stroke-opacity: .20; }
+    .model { fill: none; stroke: #339cff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .points circle { fill: #1a1c1f; stroke: #fff; stroke-width: 1.3; }
+    .formula { margin: 4px 0 6px; text-align: center; font-size: 16px; font-weight: 700; }
+    .formula .normalization { color: rgba(26,28,31,.58); font-size: 12px; font-weight: 400; white-space: nowrap; }
+    .controls { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px 20px; margin-top: 4px; }
+    .control { display: flex; min-width: 0; flex-direction: column; gap: 4px; font-weight: 600; }
+    .control-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .control output { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .range { appearance: none; width: 100%; height: 24px; margin: 0; padding: 0; border: 0; outline: none; accent-color: #339cff; background: linear-gradient(rgba(26,28,31,.12),rgba(26,28,31,.12)) center/100% 2px no-repeat; }
+    .range::-webkit-slider-runnable-track { height: 24px; background: transparent; }
+    .range::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; margin-top: 3px; border: 1px solid rgba(26,28,31,.15); border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .range:focus-visible::-webkit-slider-thumb { outline: 2px solid #339cff; outline-offset: 2px; }
+    .range::-moz-range-track { height: 24px; background: transparent; }
+    .range::-moz-range-thumb { width: 18px; height: 18px; border: 1px solid rgba(26,28,31,.15); border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .error-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 14px; margin-top: 14px; }
+    .error-track { height: 18px; overflow: hidden; border-radius: 999px; background: rgba(186,38,35,.12); }
+    .error-fill { width: 0; height: 100%; border-radius: inherit; background: #ba2623; transition: width 120ms ease-out; }
+    .error-total { min-width: 104px; text-align: right; }
+    .error-total span { display: block; color: rgba(26,28,31,.58); }
+    .error-total output { display: block; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .action-row { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin-top: 12px; }
+    .fast-mode { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .fast-mode input { margin: 0; accent-color: #1677e8; }
+    .auto-learn { min-width: 116px; padding: 9px 16px; border: 0; border-radius: 8px; color: #fff; background: #1677e8; font-weight: 600; cursor: pointer; }
+    .auto-learn:hover { background: #0f69d2; }
+    .auto-learn:focus-visible { outline: 3px solid rgba(22,119,232,.28); outline-offset: 2px; }
+    .auto-learn:disabled { background: #989da4; cursor: default; }
+    @media (max-width: 600px) { .controls { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (max-width: 390px) { .controls { grid-template-columns: 1fr; } .formula { font-size: 14px; } }
+    @media (prefers-reduced-motion: reduce) { .error-fill { transition: none; } }
+  </style>
+</head>
+<body>
+<main id="poly-fit-lab">
+  <svg class="chart" viewBox="0 0 760 420" role="img" aria-labelledby="chart-title chart-desc">
+    <title id="chart-title">Tree height observations and an adjustable degree-five polynomial model</title>
+    <desc id="chart-desc">Six sliders control the polynomial coefficients. Pale red vertical segments show absolute prediction errors. The blue curve is the current model.</desc>
+    <defs><clipPath id="plot-clip"><rect x="62" y="20" width="678" height="340"></rect></clipPath></defs>
+    <g class="grid" aria-hidden="true"></g>
+    <g class="axes" aria-hidden="true"></g>
+    <g clip-path="url(#plot-clip)">
+      <g class="residuals"></g>
+      <path class="model"></path>
+      <g class="points"></g>
+    </g>
+    <text class="axis-label" x="401" y="412" text-anchor="middle">Stem diameter</text>
+    <text class="axis-label" x="16" y="190" text-anchor="middle" transform="rotate(-90 16 190)">Height</text>
+  </svg>
+
+  <div class="formula">h = a<sub>0</sub> + a<sub>1</sub>x + a<sub>2</sub>x² + a<sub>3</sub>x³ + a<sub>4</sub>x⁴ + a<sub>5</sub>x⁵ &nbsp; <span class="normalization">x = (diameter − 35) / 35</span></div>
+
+  <section class="controls" aria-label="Degree-five polynomial coefficients">
+    <label class="control" for="coef-0"><span class="control-head"><span>a<sub>0</sub></span><output id="value-0" for="coef-0">20.00</output></span><input id="coef-0" class="range" type="range" min="0" max="50" step="0.01" value="20"></label>
+    <label class="control" for="coef-1"><span class="control-head"><span>a<sub>1</sub></span><output id="value-1" for="coef-1">10.00</output></span><input id="coef-1" class="range" type="range" min="-30" max="30" step="0.01" value="10"></label>
+    <label class="control" for="coef-2"><span class="control-head"><span>a<sub>2</sub></span><output id="value-2" for="coef-2">0.00</output></span><input id="coef-2" class="range" type="range" min="-20" max="20" step="0.01" value="0"></label>
+    <label class="control" for="coef-3"><span class="control-head"><span>a<sub>3</sub></span><output id="value-3" for="coef-3">0.00</output></span><input id="coef-3" class="range" type="range" min="-20" max="20" step="0.01" value="0"></label>
+    <label class="control" for="coef-4"><span class="control-head"><span>a<sub>4</sub></span><output id="value-4" for="coef-4">0.00</output></span><input id="coef-4" class="range" type="range" min="-20" max="20" step="0.01" value="0"></label>
+    <label class="control" for="coef-5"><span class="control-head"><span>a<sub>5</sub></span><output id="value-5" for="coef-5">0.00</output></span><input id="coef-5" class="range" type="range" min="-20" max="20" step="0.01" value="0"></label>
+  </section>
+
+  <div class="error-row" aria-live="polite">
+    <div class="error-track" aria-hidden="true"><div class="error-fill"></div></div>
+    <div class="error-total"><span>Average error</span><output id="error-value">0.0</output></div>
+  </div>
+  <div class="action-row"><label class="fast-mode" for="fast-mode"><input id="fast-mode" type="checkbox"> Fast mode (10×)</label><button id="auto-learn" class="auto-learn" type="button">auto-learn</button></div>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const root = document.getElementById("poly-fit-lab");
+  if (!root) return;
+  const fastModeInput = root.querySelector("#fast-mode");
+
+  const data = [
+    [50.2,31.4],[10.2,9.6],[64.6,35.5],[37.4,27.2],[40.3,24.6],[40,17.2],[51.6,30.2],[59,40],[49.9,27.5],[61.6,33.8],
+    [12.4,12.7],[37.5,20.8],[47.8,28],[21.1,15.6],[33.2,20.9],[16.7,16.2],[50.2,23.9],[11.6,9.3],[51.9,40],[36.5,22.7],
+    [49.1,27.4],[40.2,22.9],[43.9,28.5],[27.5,23],[30.2,15.1],[58.6,40],[36.9,29.5],[56.7,40],[10.9,11.1],[56.9,32.4],
+    [42.7,33.6],[18,10.6],[39,28.9],[44.1,23.3],[29.5,17.2],[24.9,13],[10.3,17.3],[59,30.6],[48.1,28.2],[63.6,38.6],
+    [60.3,39.5],[42.5,23],[51.3,28.4],[24.3,21.2],[37.5,14.3],[55.1,38.9],[17.4,12.4],[62.5,40],[56,23],[16.8,17.6],
+    [14.2,15.3],[55.5,30.6],[60.2,30.2],[12.2,13.7],[11.7,22],[16,9.3],[30,17.5],[11.1,6.1],[61.5,31.1],[59.6,33.2],
+    [28.8,28.1],[61,35],[30.2,12.5],[40.5,19.1],[42.8,15.5],[60.4,25.1],[35,17.6],[39.1,33.3],[26.9,16.3],[24.5,21],
+    [36.5,21.1],[59,36.2],[27.2,26.8],[62.9,32.6],[48.4,35.2],[49.4,27.4],[44.1,40],[51.7,34.5],[14.8,10.1],[63.1,28.5],
+    [37.9,29.6],[38.3,27.6],[40.2,23.7],[33.5,22.2],[23.2,21.5],[63.3,34.7],[29.4,19.4],[54.9,32.8],[14.7,11.7],[40.9,16.8],
+    [27.3,26.8],[31.4,15.5],[55.6,40],[16.1,13.9],[42.9,24.4],[15.3,5.5],[50.2,29.7],[17.8,6.8],[61.2,40],[19.1,16.6]
+  ];
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const plot = { left: 62, top: 20, width: 678, height: 340 };
+  const domain = { xMin: 0, xMax: 70, yMin: 0, yMax: 50 };
+  const sx = x => plot.left + (x - domain.xMin) / (domain.xMax - domain.xMin) * plot.width;
+  const sy = y => plot.top + plot.height - (y - domain.yMin) / (domain.yMax - domain.yMin) * plot.height;
+  const make = (name, attrs, parent) => {
+    const element = document.createElementNS(svgNS, name);
+    Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
+    parent.appendChild(element);
+    return element;
+  };
+  const normalizedX = diameter => (diameter - 35) / 35;
+  const predict = (coefficients, diameter) => {
+    const x = normalizedX(diameter);
+    let result = coefficients[5];
+    for (let degree = 4; degree >= 0; degree -= 1) result = result * x + coefficients[degree];
+    return result;
+  };
+  const totalError = coefficients => data.reduce((sum, [diameter, height]) => sum + Math.abs(height - predict(coefficients, diameter)), 0);
+  const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+  const pause = milliseconds => new Promise(resolve => window.setTimeout(resolve, fastModeInput.checked ? milliseconds / 10 : milliseconds));
+
+  const grid = root.querySelector(".grid");
+  const axes = root.querySelector(".axes");
+  [0,10,20,30,40,50,60,70].forEach(tick => {
+    const x = sx(tick);
+    make("line", { x1:x, y1:plot.top, x2:x, y2:plot.top + plot.height }, grid);
+    make("line", { x1:x, y1:plot.top + plot.height, x2:x, y2:plot.top + plot.height + 5 }, axes);
+    const label = make("text", { x:x, y:plot.top + plot.height + 21, "text-anchor":"middle" }, axes);
+    label.textContent = String(tick);
+  });
+  [0,10,20,30,40,50].forEach(tick => {
+    const y = sy(tick);
+    make("line", { x1:plot.left, y1:y, x2:plot.left + plot.width, y2:y }, grid);
+    make("line", { x1:plot.left - 5, y1:y, x2:plot.left, y2:y }, axes);
+    const label = make("text", { x:plot.left - 11, y:y + 4, "text-anchor":"end" }, axes);
+    label.textContent = String(tick);
+  });
+  make("line", { x1:plot.left, y1:plot.top + plot.height, x2:plot.left + plot.width, y2:plot.top + plot.height }, axes);
+  make("line", { x1:plot.left, y1:plot.top, x2:plot.left, y2:plot.top + plot.height }, axes);
+
+  const residualGroup = root.querySelector(".residuals");
+  const pointGroup = root.querySelector(".points");
+  const residuals = data.map(([diameter, height], index) => {
+    const line = make("line", { x1:sx(diameter), x2:sx(diameter), y1:sy(height), y2:sy(height) }, residualGroup);
+    const point = make("circle", { cx:sx(diameter), cy:sy(height), r:3.2 }, pointGroup);
+    point.setAttribute("aria-label", "Tree " + (index + 1) + ": diameter " + diameter + ", height " + height);
+    return line;
+  });
+
+  const inputs = Array.from({ length:6 }, (_, index) => root.querySelector("#coef-" + index));
+  const outputs = Array.from({ length:6 }, (_, index) => root.querySelector("#value-" + index));
+  const bounds = inputs.map(input => [Number(input.min), Number(input.max)]);
+  const model = root.querySelector(".model");
+  const errorValue = root.querySelector("#error-value");
+  const errorFill = root.querySelector(".error-fill");
+  const autoLearnButton = root.querySelector("#auto-learn");
+  const errorScale = 900;
+
+  const coefficients = () => inputs.map(input => Number(input.value));
+  const drawCurve = values => {
+    const segments = [];
+    for (let pixel = 0; pixel <= plot.width; pixel += 3) {
+      const diameter = domain.xMin + pixel / plot.width * (domain.xMax - domain.xMin);
+      segments.push((segments.length ? "L" : "M") + sx(diameter).toFixed(2) + "," + sy(predict(values, diameter)).toFixed(2));
+    }
+    model.setAttribute("d", segments.join(" "));
+  };
+  const update = () => {
+    const values = coefficients();
+    let sum = 0;
+    data.forEach(([diameter, height], index) => {
+      const prediction = predict(values, diameter);
+      residuals[index].setAttribute("y1", sy(height));
+      residuals[index].setAttribute("y2", sy(prediction));
+      sum += Math.abs(height - prediction);
+    });
+    drawCurve(values);
+    values.forEach((value, index) => {
+      outputs[index].value = value.toFixed(2);
+      outputs[index].textContent = value.toFixed(2);
+    });
+    const averageError = sum / data.length;
+    errorValue.value = averageError.toFixed(1);
+    errorValue.textContent = averageError.toFixed(1);
+    errorFill.style.width = Math.min(100, sum / errorScale * 100).toFixed(2) + "%";
+  };
+  const setCoefficients = values => {
+    values.forEach((value, index) => { inputs[index].value = clamp(value, bounds[index][0], bounds[index][1]).toFixed(2); });
+    update();
+  };
+  const probe = async (values, delay) => {
+    setCoefficients(values);
+    if (delay > 0) await pause(delay);
+  };
+
+  inputs.forEach(input => input.addEventListener("input", update));
+
+  const optimize = async () => {
+    if (autoLearnButton.disabled) return;
+    autoLearnButton.disabled = true;
+    autoLearnButton.textContent = "optimizing";
+    inputs.forEach(input => { input.disabled = true; });
+    const step = 0.01;
+
+    try {
+      for (let iteration = 1; iteration <= 5000; iteration += 1) {
+        const base = coefficients();
+        const baseError = totalError(base);
+        const directions = new Array(6).fill(0);
+        const delay = iteration <= 5 ? 25 : iteration <= 20 ? 8 : iteration <= 60 ? 2 : 0;
+
+        for (let index = 0; index < 6; index += 1) {
+          const plus = base.slice();
+          const minus = base.slice();
+          plus[index] = clamp(base[index] + step, bounds[index][0], bounds[index][1]);
+          minus[index] = clamp(base[index] - step, bounds[index][0], bounds[index][1]);
+          let plusError = Infinity;
+          let minusError = Infinity;
+
+          if (plus[index] !== base[index]) {
+            await probe(plus, delay);
+            plusError = totalError(plus);
+            await probe(base, delay);
+          }
+          if (minus[index] !== base[index]) {
+            await probe(minus, delay);
+            minusError = totalError(minus);
+            await probe(base, delay);
+          }
+          if (Math.min(plusError, minusError) < baseError - 1e-9) directions[index] = plusError <= minusError ? 1 : -1;
+        }
+
+        const next = base.map((value, index) => clamp(value + directions[index] * step, bounds[index][0], bounds[index][1]));
+        const nextError = totalError(next);
+        if (directions.every(direction => direction === 0) || nextError >= baseError - 1e-9) {
+          setCoefficients(base);
+          break;
+        }
+        await probe(next, Math.max(delay, iteration <= 60 ? 16 : 0));
+        if (iteration % 25 === 0) await pause(0);
+      }
+    } finally {
+      inputs.forEach(input => { input.disabled = false; });
+      autoLearnButton.disabled = false;
+      autoLearnButton.textContent = "auto-learn";
+    }
+  };
+
+  autoLearnButton.addEventListener("click", optimize);
+  update();
+})();
+</script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>
