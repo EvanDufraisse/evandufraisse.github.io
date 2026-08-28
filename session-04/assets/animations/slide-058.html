@@ -1,0 +1,502 @@
+<meta charset="utf-8">
+<div id="attention-flow-animation">
+  <style>
+    #attention-flow-animation {
+      width: 100%;
+      color: #17324d;
+      background: transparent;
+      --af-navy: #17324d;
+      --af-blue: #4d74f4;
+      --af-blue-soft: #e9eefc;
+      --af-coral: #ff876a;
+      --af-coral-soft: #fff0e5;
+      --af-green-soft: #ddf3ee;
+      --af-purple-soft: #eee7ff;
+      --af-sky-soft: #e5f4fa;
+      --af-panel: #f4f8fc;
+      --af-border: #ccdceb;
+      --af-muted: #70849a;
+      --af-vector: #a5bdd1;
+    }
+
+    #attention-flow-animation .af-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    #attention-flow-animation text {
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #attention-flow-animation .af-section {
+      font-size: 18px;
+      font-weight: 500;
+      fill: var(--af-navy);
+    }
+
+    #attention-flow-animation .af-sub {
+      font-size: 14px;
+      font-weight: 400;
+      fill: var(--af-muted);
+    }
+
+    #attention-flow-animation .af-small {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .7px;
+      fill: var(--af-muted);
+    }
+
+    #attention-flow-animation .af-token-text {
+      font-size: 16px;
+      font-weight: 500;
+      fill: var(--af-navy);
+    }
+
+    #attention-flow-animation .af-layer {
+      fill: var(--af-panel);
+      stroke: var(--af-border);
+      stroke-width: 2;
+    }
+
+    #attention-flow-animation .af-token-card,
+    #attention-flow-animation .af-vector-card {
+      transition: opacity .28s ease, stroke .28s ease, stroke-width .28s ease, fill .28s ease;
+    }
+
+    #attention-flow-animation .af-token-card.is-active,
+    #attention-flow-animation .af-vector-card.is-active {
+      fill: var(--af-coral-soft);
+      stroke: var(--af-coral);
+      stroke-width: 2.5;
+      opacity: 1;
+    }
+
+    #attention-flow-animation .af-output {
+      opacity: .12;
+      transition: opacity .32s ease;
+    }
+
+    #attention-flow-animation .af-output.is-generated {
+      opacity: 1;
+    }
+
+    #attention-flow-animation .af-output-card {
+      transform-box: fill-box;
+      transform-origin: center;
+      transform: scale(.82);
+      transition: transform .32s ease, fill .28s ease, stroke .28s ease;
+    }
+
+    #attention-flow-animation .af-output.is-generated .af-output-card {
+      transform: scale(1);
+    }
+
+    #attention-flow-animation .af-output.is-active .af-output-card {
+      fill: var(--af-coral-soft);
+      stroke: var(--af-coral);
+      stroke-width: 2.5;
+    }
+
+    #attention-flow-animation .af-output-arrow {
+      opacity: .15;
+      transition: opacity .28s ease, stroke .28s ease;
+    }
+
+    #attention-flow-animation .af-output-arrow.is-generated {
+      opacity: .75;
+    }
+
+    #attention-flow-animation .af-output-arrow.is-active {
+      opacity: 1;
+      stroke: var(--af-coral);
+      marker-end: url(#af-arrow-coral);
+    }
+
+    #attention-flow-animation .af-link-group {
+      opacity: 0;
+      transition: opacity .24s ease;
+    }
+
+    #attention-flow-animation .af-link-group.is-active {
+      opacity: 1;
+    }
+
+    #attention-flow-animation .af-link {
+      fill: none;
+      stroke: var(--af-blue);
+      stroke-width: 3.2;
+      stroke-linecap: round;
+      stroke-dasharray: 8 7;
+      animation: af-draw-link .75s ease forwards;
+    }
+
+    #attention-flow-animation .af-link-group.is-active .af-link {
+      stroke-dasharray: 8 7;
+    }
+
+    #attention-flow-animation .af-current-pill {
+      fill: var(--af-coral-soft);
+      stroke: var(--af-coral);
+      stroke-width: 1.5;
+    }
+
+    #attention-flow-animation .af-status-main {
+      font-size: 17px;
+      font-weight: 500;
+      fill: var(--af-navy);
+    }
+
+    #attention-flow-animation .af-status-ops {
+      font-size: 24px;
+      font-weight: 500;
+      fill: var(--af-coral);
+    }
+
+    #attention-flow-animation .af-controls {
+      justify-content: center;
+      margin-top: .5rem;
+    }
+
+    @keyframes af-draw-link {
+      from { stroke-dashoffset: 55; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #attention-flow-animation .af-token-card,
+      #attention-flow-animation .af-vector-card,
+      #attention-flow-animation .af-output,
+      #attention-flow-animation .af-output-arrow,
+      #attention-flow-animation .af-link-group {
+        transition: none;
+      }
+
+      #attention-flow-animation .af-link {
+        animation: none;
+      }
+    }
+  </style>
+
+  <svg class="af-svg" viewBox="0 0 1000 570" role="img" aria-labelledby="af-title af-desc">
+    <title id="af-title">Tokens attend to previous tokens one after another</title>
+    <desc id="af-desc">Input tokens pass through an embedding layer. Inside the attention layer, each token successively accesses all previous token representations, and a new output representation is generated above the layer.</desc>
+
+    <defs>
+      <filter id="af-shadow" x="-20%" y="-20%" width="140%" height="150%">
+        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#17324d" flood-opacity=".1"/>
+      </filter>
+      <marker id="af-arrow-blue" viewBox="0 0 10 10" refX="8.3" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 Z" fill="#4d74f4"/>
+      </marker>
+      <marker id="af-arrow-coral" viewBox="0 0 10 10" refX="8.3" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 Z" fill="#ff876a"/>
+      </marker>
+    </defs>
+
+    <!-- Output representations generated by the attention layer -->
+    <text x="610" y="18" text-anchor="middle" class="af-small">OUTPUT REPRESENTATIONS</text>
+
+    <g class="af-output" data-output-index="0" transform="translate(395 52)">
+      <rect class="af-output-card" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="12" width="8" height="22" rx="3" fill="#4d74f4"/>
+      <rect x="25" y="7" width="8" height="27" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="17" width="8" height="17" rx="3" fill="#d0deea"/>
+      <text x="29" y="-8" text-anchor="middle" class="af-token-text">The</text>
+    </g>
+    <g class="af-output" data-output-index="1" transform="translate(515 52)">
+      <rect class="af-output-card" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="17" width="8" height="17" rx="3" fill="#a5bdd1"/>
+      <rect x="25" y="9" width="8" height="25" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="13" width="8" height="21" rx="3" fill="#d0deea"/>
+      <text x="29" y="-8" text-anchor="middle" class="af-token-text">cat</text>
+    </g>
+    <g class="af-output" data-output-index="2" transform="translate(635 52)">
+      <rect class="af-output-card" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="9" width="8" height="25" rx="3" fill="#f4a164"/>
+      <rect x="25" y="16" width="8" height="18" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+      <text x="29" y="-8" text-anchor="middle" class="af-token-text">sat</text>
+    </g>
+    <g class="af-output" data-output-index="3" transform="translate(755 52)">
+      <rect class="af-output-card" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="14" width="8" height="20" rx="3" fill="#d0deea"/>
+      <rect x="25" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="11" width="8" height="23" rx="3" fill="#f4a164"/>
+      <text x="29" y="-8" text-anchor="middle" class="af-token-text">on</text>
+    </g>
+
+    <!-- Output arrows -->
+    <g fill="none" stroke="#4d74f4" stroke-width="3" stroke-linecap="round" marker-end="url(#af-arrow-blue)">
+      <line class="af-output-arrow" data-output-arrow="0" x1="424" y1="165" x2="424" y2="100"/>
+      <line class="af-output-arrow" data-output-arrow="1" x1="544" y1="165" x2="544" y2="100"/>
+      <line class="af-output-arrow" data-output-arrow="2" x1="664" y1="165" x2="664" y2="100"/>
+      <line class="af-output-arrow" data-output-arrow="3" x1="784" y1="165" x2="784" y2="100"/>
+    </g>
+
+    <!-- Attention layer -->
+    <rect x="72" y="157" width="856" height="240" rx="27" class="af-layer" filter="url(#af-shadow)"/>
+    <rect x="98" y="143" width="166" height="29" rx="14.5" fill="#e9eefc"/>
+    <text x="181" y="163" text-anchor="middle" class="af-small" style="fill:#3e67d7">ATTENTION LAYER</text>
+
+    <rect x="96" y="195" width="278" height="106" rx="19" class="af-current-pill"/>
+    <text x="235" y="219" text-anchor="middle" class="af-small" style="fill:#b25a2a">CURRENT TOKEN</text>
+    <text id="af-status-main" x="235" y="250" text-anchor="middle" class="af-status-main">“The” attends to 0 tokens</text>
+    <text id="af-status-ops" x="235" y="283" text-anchor="middle" class="af-status-ops">0 operations</text>
+
+    <!-- Information-flow arrows shown one token at a time -->
+    <g class="af-link-group" data-link-step="1" marker-start="url(#af-arrow-blue)">
+      <path class="af-link" d="M424 323 C424 250 544 250 544 323"/>
+    </g>
+
+    <g class="af-link-group" data-link-step="2" marker-start="url(#af-arrow-blue)">
+      <path class="af-link" d="M424 323 C424 212 664 212 664 323"/>
+      <path class="af-link" d="M544 323 C544 263 664 263 664 323"/>
+    </g>
+
+    <g class="af-link-group" data-link-step="3" marker-start="url(#af-arrow-blue)">
+      <path class="af-link" d="M424 323 C424 180 784 180 784 323"/>
+      <path class="af-link" d="M544 323 C544 220 784 220 784 323"/>
+      <path class="af-link" d="M664 323 C664 272 784 272 784 323"/>
+    </g>
+
+    <!-- Token representations inside attention -->
+    <g transform="translate(395 323)">
+      <rect class="af-vector-card" data-active-token="0" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="13" width="8" height="21" rx="3" fill="#4d74f4"/>
+      <rect x="25" y="7" width="8" height="27" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="18" width="8" height="16" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(515 323)">
+      <rect class="af-vector-card" data-active-token="1" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="17" width="8" height="17" rx="3" fill="#a5bdd1"/>
+      <rect x="25" y="9" width="8" height="25" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="14" width="8" height="20" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(635 323)">
+      <rect class="af-vector-card" data-active-token="2" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="9" width="8" height="25" rx="3" fill="#f4a164"/>
+      <rect x="25" y="16" width="8" height="18" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+    </g>
+    <g transform="translate(755 323)">
+      <rect class="af-vector-card" data-active-token="3" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="14" width="8" height="20" rx="3" fill="#d0deea"/>
+      <rect x="25" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="11" width="8" height="23" rx="3" fill="#f4a164"/>
+    </g>
+
+    <!-- Embeddings enter the attention layer -->
+    <g fill="none" stroke="#4d74f4" stroke-width="3" stroke-linecap="round" marker-end="url(#af-arrow-blue)" opacity=".82">
+      <line x1="424" y1="429" x2="424" y2="403"/>
+      <line x1="544" y1="429" x2="544" y2="403"/>
+      <line x1="664" y1="429" x2="664" y2="403"/>
+      <line x1="784" y1="429" x2="784" y2="403"/>
+    </g>
+
+    <!-- Embedding layer -->
+    <rect x="72" y="431" width="856" height="66" rx="20" class="af-layer" filter="url(#af-shadow)"/>
+    <text x="105" y="460" class="af-section">Embedding layer</text>
+    <text x="105" y="481" class="af-sub">one initial vector per token</text>
+
+    <g transform="translate(395 442)">
+      <rect class="af-vector-card" data-active-token="0" width="58" height="44" rx="11" fill="#edf3f9"/>
+      <rect x="10" y="13" width="8" height="21" rx="3" fill="#4d74f4"/>
+      <rect x="25" y="7" width="8" height="27" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="18" width="8" height="16" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(515 442)">
+      <rect class="af-vector-card" data-active-token="1" width="58" height="44" rx="11" fill="#edf3f9"/>
+      <rect x="10" y="17" width="8" height="17" rx="3" fill="#a5bdd1"/>
+      <rect x="25" y="9" width="8" height="25" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="14" width="8" height="20" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(635 442)">
+      <rect class="af-vector-card" data-active-token="2" width="58" height="44" rx="11" fill="#edf3f9"/>
+      <rect x="10" y="9" width="8" height="25" rx="3" fill="#f4a164"/>
+      <rect x="25" y="16" width="8" height="18" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+    </g>
+    <g transform="translate(755 442)">
+      <rect class="af-vector-card" data-active-token="3" width="58" height="44" rx="11" fill="#edf3f9"/>
+      <rect x="10" y="14" width="8" height="20" rx="3" fill="#d0deea"/>
+      <rect x="25" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="11" width="8" height="23" rx="3" fill="#f4a164"/>
+    </g>
+
+    <!-- Input tokens -->
+    <text x="329" y="546" text-anchor="end" class="af-small">INPUT</text>
+    <g>
+      <rect class="af-token-card" data-active-token="0" x="391" y="516" width="66" height="38" rx="12" fill="#e9eefc" stroke="transparent" stroke-width="2"/>
+      <text x="424" y="541" text-anchor="middle" class="af-token-text">The</text>
+
+      <rect class="af-token-card" data-active-token="1" x="511" y="516" width="66" height="38" rx="12" fill="#ddf3ee" stroke="transparent" stroke-width="2"/>
+      <text x="544" y="541" text-anchor="middle" class="af-token-text">cat</text>
+
+      <rect class="af-token-card" data-active-token="2" x="631" y="516" width="66" height="38" rx="12" fill="#eee7ff" stroke="transparent" stroke-width="2"/>
+      <text x="664" y="541" text-anchor="middle" class="af-token-text">sat</text>
+
+      <rect class="af-token-card" data-active-token="3" x="751" y="516" width="66" height="38" rx="12" fill="#e5f4fa" stroke="transparent" stroke-width="2"/>
+      <text x="784" y="541" text-anchor="middle" class="af-token-text">on</text>
+    </g>
+
+    <g fill="none" stroke="#4d74f4" stroke-width="3" stroke-linecap="round" marker-end="url(#af-arrow-blue)" opacity=".82">
+      <line x1="424" y1="514" x2="424" y2="501"/>
+      <line x1="544" y1="514" x2="544" y2="501"/>
+      <line x1="664" y1="514" x2="664" y2="501"/>
+      <line x1="784" y1="514" x2="784" y2="501"/>
+    </g>
+  </svg>
+
+  <div class="viz-row af-controls">
+    <button id="af-previous" class="btn" type="button">Previous token</button>
+    <span id="af-step" class="viz-badge">Token 1 of 4</span>
+    <button id="af-next" class="btn btn-primary" type="button">Next token</button>
+    <span id="af-live" class="sr-only" aria-live="polite"></span>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.getElementById("attention-flow-animation");
+      if (!root || root.dataset.ready === "true") return;
+      root.dataset.ready = "true";
+
+      const tokenNames = ["The", "cat", "sat", "on"];
+      const activeNodes = Array.from(root.querySelectorAll("[data-active-token]"));
+      const outputNodes = Array.from(root.querySelectorAll("[data-output-index]"));
+      const outputArrows = Array.from(root.querySelectorAll("[data-output-arrow]"));
+      const linkGroups = Array.from(root.querySelectorAll("[data-link-step]"));
+      const statusMain = root.querySelector("#af-status-main");
+      const statusOps = root.querySelector("#af-status-ops");
+      const live = root.querySelector("#af-live");
+      const previous = root.querySelector("#af-previous");
+      const next = root.querySelector("#af-next");
+      const stepLabel = root.querySelector("#af-step");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let currentStep = 0;
+      let revealTimer;
+
+      function setStep(step) {
+        window.clearTimeout(revealTimer);
+
+        activeNodes.forEach(function (node) {
+          const index = Number(node.getAttribute("data-active-token"));
+          node.classList.toggle("is-active", index === step);
+        });
+
+        outputNodes.forEach(function (node) {
+          const index = Number(node.getAttribute("data-output-index"));
+          node.classList.toggle("is-generated", index < step);
+          node.classList.toggle("is-active", index === step);
+        });
+
+        outputArrows.forEach(function (node) {
+          const index = Number(node.getAttribute("data-output-arrow"));
+          node.classList.toggle("is-generated", index < step);
+          node.classList.toggle("is-active", index === step);
+        });
+
+        linkGroups.forEach(function (node) {
+          const index = Number(node.getAttribute("data-link-step"));
+          node.classList.toggle("is-active", index === step);
+          if (index === step) {
+            node.querySelectorAll(".af-link").forEach(function (path) {
+              path.style.animation = "none";
+              path.getBoundingClientRect();
+              path.style.animation = "";
+            });
+          }
+        });
+
+        const previousCount = step;
+        const operationSuffix = previousCount === 1 ? "operation" : "operations";
+        const tokenSuffix = previousCount === 1 ? "token" : "tokens";
+        const mainMessage = "“" + tokenNames[step] + "” attends to " + previousCount + " " + tokenSuffix;
+        const operationsMessage = previousCount + " " + operationSuffix;
+        const message = mainMessage + ". " + operationsMessage;
+        statusMain.textContent = mainMessage;
+        statusOps.textContent = operationsMessage;
+        live.textContent = message;
+        stepLabel.textContent = "Token " + (step + 1) + " of 4";
+        previous.disabled = step === 0;
+        next.disabled = step === tokenNames.length - 1;
+
+        revealTimer = window.setTimeout(function () {
+          const currentOutput = outputNodes.find(function (node) {
+            return Number(node.getAttribute("data-output-index")) === step;
+          });
+          const currentArrow = outputArrows.find(function (node) {
+            return Number(node.getAttribute("data-output-arrow")) === step;
+          });
+          currentOutput.classList.add("is-generated");
+          currentArrow.classList.add("is-generated");
+          live.textContent = message + ". The output representation is generated.";
+        }, reducedMotion ? 0 : 620);
+      }
+
+      previous.addEventListener("click", function () {
+        currentStep = Math.max(0, currentStep - 1);
+        setStep(currentStep);
+      });
+
+      next.addEventListener("click", function () {
+        currentStep = Math.min(tokenNames.length - 1, currentStep + 1);
+        setStep(currentStep);
+      });
+
+      setStep(currentStep);
+    }());
+  </script>
+</div>
+
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>

@@ -1,0 +1,171 @@
+{
+  "source": "session-04-final.pptx",
+  "source_sha256": "4fe8f086852e631ea0b147fac1bbbcd7c604fdbfe23844d27f07f9251dd048dc",
+  "slide_count": 69,
+  "semantic_slides": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    22,
+    23,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69
+  ],
+  "fallback_slides": [
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    24,
+    32,
+    39,
+    40,
+    56
+  ],
+  "iframe_slides": [
+    2,
+    4,
+    5,
+    58,
+    59,
+    60,
+    62,
+    65
+  ],
+  "warnings": [
+    {
+      "slide": 14,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 15,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 16,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 17,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 18,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 19,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 20,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 21,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 24,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 32,
+      "unsupported_features": [
+        "unsupported geometry: prstTxWarp"
+      ]
+    },
+    {
+      "slide": 39,
+      "unsupported_features": [
+        "unsupported object: cxnSp"
+      ]
+    },
+    {
+      "slide": 40,
+      "unsupported_features": [
+        "unsupported object: cxnSp"
+      ]
+    },
+    {
+      "slide": 56,
+      "unsupported_features": [
+        "unsupported preset geometry: rightArrow"
+      ]
+    }
+  ],
+  "renderer": "powerpoint-quicklook",
+  "media_files": 36,
+  "reveal_version": "6.0.1"
+}

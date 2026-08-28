@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Five-neuron digit layer — Auto-learn</title>
+<style>
+:root{
+  --ink:#202020;--muted:#6d6d6d;--line:#d9dde4;--panel:#ffffff;--layer:#fafbfc;
+  --green:#91db63;--green-line:#5ea838;--orange:#f6b36b;--orange-line:#dd9345;
+  --blue:#b9deed;--blue-line:#6db2cf;--blue-strong:#276ef1;--red:#b52b2b;
+  --red-soft:#fff0ef;--off:#f1f1f1;--on:#222;--positive:#5682dc;--negative:#ef8f5f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+.wrap{width:1240px;max-width:100%;margin:0 auto;padding:20px;overflow-x:auto}
+h1{font-size:25px;margin:0 0 5px}.subtitle{color:var(--muted);margin-bottom:14px}
+.card{min-width:1160px;border:1px solid var(--line);border-radius:17px;padding:16px;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.05)}
+.diagram{position:relative;width:1126px;height:590px;margin:auto;display:grid;grid-template-columns:218px 1fr;gap:80px;align-items:center}
+.input-panel{height:345px;border:1px solid #d7d7d7;border-radius:19px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.07);padding:17px;text-align:center;z-index:2}
+.section-title{font-size:17px;font-weight:700;color:#9b2424}.small{font-size:11px;color:var(--muted)}
+.screen{display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(5,38px);gap:5px;justify-content:center;margin:13px auto 10px}
+.pixel{background:var(--off);border:1px solid #d7d7d7;border-radius:6px;transition:background .13s,transform .13s}.pixel.on{background:var(--on);transform:scale(1.03)}
+.digit-select{display:flex;justify-content:center;gap:5px;margin-top:13px}
+.digit-select button{width:28px;height:27px;padding:0;border:1px solid #cfd3da;border-radius:7px;background:#fff;font-weight:700;cursor:pointer}
+.digit-select button.selected{background:var(--blue-strong);border-color:var(--blue-strong);color:#fff}
+.layer-panel{height:556px;border:1.5px solid #cdd3dc;border-radius:23px;background:var(--layer);padding:47px 18px 17px;position:relative;z-index:2}
+.layer-label{position:absolute;left:50%;top:-18px;transform:translateX(-50%);width:410px;height:36px;border:1px solid #cdd3dc;border-radius:18px;background:#fff;color:#9b2424;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.neuron-row{height:92px;margin-bottom:9px;border:1px solid #d8dce3;border-radius:13px;background:#fff;display:grid;grid-template-columns:76px 104px 34px 104px 115px 92px 1fr;align-items:center;position:relative;transition:border-color .15s,box-shadow .15s}
+.neuron-row:last-child{margin-bottom:0}.neuron-row.target{border-color:var(--blue-strong);box-shadow:0 0 0 1px var(--blue-strong)}
+.neuron-row.predicted .output-node{background:var(--green);border-color:var(--green-line)}
+.neuron-row.wrong-prediction{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+.neuron-row.wrong-prediction .output-node{background:#ffd9d5;border-color:var(--red)}
+.neuron-label{text-align:center}.neuron-label b{font-size:20px;display:block}.neuron-label span{font-size:10px;color:var(--muted)}
+.weights-wrap{text-align:center}.mini-title{font-size:9px;color:var(--muted);margin-bottom:4px;text-transform:uppercase}
+.weight-grid{display:grid;grid-template-columns:repeat(3,24px);grid-template-rows:repeat(5,10px);gap:2px;justify-content:center}
+.weight{border-radius:2px;border:1px solid rgba(0,0,0,.08);transition:background .1s,transform .1s}.weight.changed{transform:scale(1.12)}
+.arrow{font-size:19px;text-align:center;color:#272727}
+.sum-wrap,.activation-wrap,.output-wrap{text-align:center}.sum-node{width:63px;height:63px;margin:auto;border-radius:50%;background:var(--orange);border:1.5px solid var(--orange-line);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:box-shadow .15s}
+.sum-node.active{box-shadow:0 0 0 6px rgba(247,178,103,.18)}.sigma{font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:.9}.z-value{font-size:10px;margin-top:4px}.bias{font-size:9px;color:#75502c}
+.activation-box{width:91px;height:54px;margin:auto;border-radius:10px;background:var(--blue);border:1.5px solid var(--blue-line);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:box-shadow .15s}.activation-box.active{box-shadow:0 0 0 6px rgba(80,170,210,.14)}
+.activation-box b{font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:400}.activation-box span{font-size:10px;color:#5b6b72}
+.output-node{width:58px;height:58px;margin:auto;border-radius:50%;background:#eaf6e4;border:1.5px solid #80bd5d;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;transition:background .15s,border-color .15s}
+.result{padding-left:5px}.result b{font-size:14px;display:block}.result span{font-size:10px;color:var(--muted)}
+.fanout{position:absolute;inset:0;width:1126px;height:590px;z-index:1;pointer-events:none}.fanout path{fill:none;stroke:#aeb7c3;stroke-width:1.5}.fanout .main-wire{stroke:#252525;stroke-width:2.2}.fanout circle{fill:var(--blue-strong)}
+.bottom{display:grid;grid-template-columns:440px 1fr;gap:16px;border-top:1px solid #ececec;padding-top:15px}
+.panel{border:1px solid #e1e1e1;border-radius:12px;padding:13px;background:#fff;min-height:220px}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}.panel-title{font-weight:700}.metric{text-align:right}.metric b{font-size:21px;display:block}.metric span{font-size:11px;color:var(--muted)}
+.example-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.example-card{border:1px solid #d7d7d7;border-radius:9px;background:#fff;padding:7px;cursor:pointer;text-align:left;min-height:82px}.example-card.selected{border:2px solid var(--blue-strong);padding:6px}.example-card.incorrect{background:var(--red-soft);border-color:#e2aaa6}
+.example-top{display:flex;justify-content:space-between;align-items:center}.example-digit{font-size:19px;font-weight:700}.tag{font-size:9px;color:var(--muted)}.example-prediction{font-size:11px;margin-top:7px}.example-loss{font-size:10px;color:var(--muted);margin-top:3px}
+.chart-wrap{height:172px}.chart{width:100%;height:100%;display:block}.axis{stroke:#aaa;stroke-width:1}.grid{stroke:#e7e7e7;stroke-width:1}.loss-line{fill:none;stroke:var(--blue-strong);stroke-width:2.4}.error-line{fill:none;stroke:var(--red);stroke-width:2.4}.dot-loss{fill:var(--blue-strong)}.dot-error{fill:var(--red)}
+.chart text{font-family:Arial,Helvetica,sans-serif;font-size:10px;fill:#666}.legend{display:flex;gap:16px;font-size:11px;color:var(--muted);margin-top:3px}.swatch{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px}.swatch.loss{background:var(--blue-strong)}.swatch.error{background:var(--red)}
+.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:13px}button.control{padding:9px 13px;border-radius:9px;border:1px solid #c9c9c9;background:#fff;cursor:pointer;font-size:14px}button.control:hover{background:#f5f5f5}button.control:disabled{cursor:default}
+button.primary{background:var(--blue-strong);color:#fff;border-color:var(--blue-strong);min-width:125px}button.primary.optimizing{background:#9a9a9a;border-color:#9a9a9a}.speed{display:flex;align-items:center;gap:5px;font-size:13px}.status{margin-left:auto;font-size:12px;color:var(--muted)}.status b{color:var(--ink)}.method{font-size:11px;color:var(--muted);margin-top:8px}
+@media(max-width:760px){.wrap{padding:10px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>A layer learns to recognize digits 0–4</h1>
+  <div class="subtitle">The same input reaches five independent sigmoid neurons; the largest probability determines the prediction.</div>
+  <div class="card">
+    <div class="diagram">
+      <svg class="fanout" viewBox="0 0 1126 590" aria-hidden="true">
+        <defs><marker id="fan-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4 0 8Z" fill="#252525"/></marker></defs>
+        <path class="main-wire" d="M218 295h45" marker-end="url(#fan-arrow)"/><circle cx="271" cy="295" r="7"/>
+        <path d="M271 295h26V104h19M297 104v382M297 199h19M297 295h19M297 390h19M297 486h19"/>
+      </svg>
+      <section class="input-panel">
+        <div class="section-title">Shared input</div><div class="small">sent to every neuron</div>
+        <div class="screen" id="screen"></div><div class="small">15 pixels: x₁ … x₁₅</div>
+        <div class="digit-select" id="digitSelect" aria-label="Select input digit"></div>
+      </section>
+      <section class="layer-panel">
+        <div class="layer-label">ONE LAYER · 5 PARALLEL NEURONS</div>
+        <div id="neuronRows"></div>
+      </section>
+    </div>
+
+    <div class="bottom">
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Loss for each number</div><div class="metric"><b id="totalLoss">0.00</b><span>total binary cross-entropy</span></div></div>
+        <div class="example-grid" id="exampleGrid"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Learning progression</div><div class="metric"><b id="classificationError">0 / 5</b><span>misclassified numbers</span></div></div>
+        <div class="chart-wrap"><svg id="historyChart" class="chart" viewBox="0 0 650 172" role="img" aria-label="Total classification loss and classification error during learning"></svg></div>
+        <div class="legend"><span><i class="swatch loss"></i>Total loss</span><span><i class="swatch error"></i>Classification error</span></div>
+      </section>
+    </div>
+
+    <div class="controls">
+      <button class="control primary" id="autoLearn">Auto-learn</button>
+      <button class="control" id="randomize">New random weights</button>
+      <label class="speed"><input type="checkbox" id="fastMode"> Fast mode (10×)</label>
+      <div class="status">Step <b id="stepValue">0</b> · <span id="statusText">ready</span></div>
+    </div>
+    <div class="method">Each step tests all 80 parameters at ±0.01 from the same starting point, then updates them simultaneously.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const glyphs=[
+  ["111","101","101","101","111"],
+  ["010","110","010","010","111"],
+  ["111","001","111","100","111"],
+  ["111","001","111","001","111"],
+  ["101","101","111","001","001"]
+];
+const flatten=function(rows){return rows.join("").split("").map(Number);};
+const examples=glyphs.map(function(rows,digit){return {digit:digit,x:flatten(rows)};});
+const DETECTORS=5, INPUTS=15, PROBE=0.01, UPDATE=0.01, TARGET_LOSS=0.35, MAX_STEPS=1600;
+let W=[],B=[],selectedDigit=3,step=0,running=false,history=[];
+
+const screen=document.getElementById("screen"),digitSelect=document.getElementById("digitSelect"),neuronRows=document.getElementById("neuronRows");
+const exampleGrid=document.getElementById("exampleGrid"),totalLossEl=document.getElementById("totalLoss"),classificationErrorEl=document.getElementById("classificationError");
+const chart=document.getElementById("historyChart"),autoLearn=document.getElementById("autoLearn"),randomize=document.getElementById("randomize");
+const fastMode=document.getElementById("fastMode"),stepValue=document.getElementById("stepValue"),statusText=document.getElementById("statusText");
+
+for(let i=0;i<INPUTS;i++){const pixel=document.createElement("div");pixel.className="pixel";screen.appendChild(pixel);}
+for(let d=0;d<DETECTORS;d++){
+  const button=document.createElement("button");button.type="button";button.textContent=String(d);button.dataset.digit=String(d);
+  button.addEventListener("click",function(){selectedDigit=d;render(false);});digitSelect.appendChild(button);
+
+  const row=document.createElement("div");row.className="neuron-row";row.dataset.detector=String(d);
+  row.innerHTML='<div class="neuron-label"><b>'+d+'</b><span>detector</span></div>'+
+    '<div class="weights-wrap"><div class="mini-title">Weights</div><div class="weight-grid"></div></div><div class="arrow">→</div>'+
+    '<div class="sum-wrap"><div class="mini-title">Sum + bias</div><div class="sum-node"><div class="sigma">Σ</div><div class="z-value">z = 0.00</div><div class="bias">b = 0.00</div></div></div>'+
+    '<div class="activation-wrap"><div class="mini-title">Activation</div><div class="activation-box"><b>sigmoid</b><span>σ(z)</span></div></div>'+
+    '<div class="output-wrap"><div class="mini-title">Output</div><div class="output-node">50%</div></div><div class="result"><b>P('+d+')</b><span>digit '+d+' detector</span></div>';
+  const weightGrid=row.querySelector(".weight-grid");for(let i=0;i<INPUTS;i++){const cell=document.createElement("div");cell.className="weight";weightGrid.appendChild(cell);}
+  neuronRows.appendChild(row);
+
+  const card=document.createElement("button");card.type="button";card.className="example-card";card.dataset.digit=String(d);
+  card.innerHTML='<div class="example-top"><span class="example-digit">'+d+'</span><span class="tag"></span></div><div class="example-prediction"></div><div class="example-loss"></div>';
+  card.addEventListener("click",function(){selectedDigit=d;render(false);});exampleGrid.appendChild(card);
+}
+
+function sigmoid(z){if(z>=0){const q=Math.exp(-z);return 1/(1+q);}const q=Math.exp(z);return q/(1+q);}
+function binaryLoss(p,y){const clipped=Math.max(1e-12,Math.min(1-1e-12,p));return -(y*Math.log(clipped)+(1-y)*Math.log(1-clipped));}
+function evaluate(){
+  const details=examples.map(function(example){
+    const outputs=[];let exampleLoss=0;
+    for(let k=0;k<DETECTORS;k++){
+      let z=B[k];for(let i=0;i<INPUTS;i++)z+=W[k][i]*example.x[i];
+      const p=sigmoid(z),target=k===example.digit?1:0,loss=binaryLoss(p,target);outputs.push({z:z,p:p,target:target,loss:loss});exampleLoss+=loss;
+    }
+    let predicted=0;for(let k=1;k<DETECTORS;k++)if(outputs[k].p>outputs[predicted].p)predicted=k;
+    return {digit:example.digit,outputs:outputs,predicted:predicted,loss:exampleLoss,wrong:predicted!==example.digit};
+  });
+  return {details:details,total:details.reduce(function(sum,item){return sum+item.loss;},0),errors:details.filter(function(item){return item.wrong;}).length};
+}
+function randomParameter(){return Math.random()*0.7-0.35;}
+function randomizeWeights(){
+  if(running)return;W=Array.from({length:DETECTORS},function(){return Array.from({length:INPUTS},randomParameter);});B=Array.from({length:DETECTORS},randomParameter);
+  step=0;history=[];const state=evaluate();history.push({step:0,loss:state.total,error:state.errors});statusText.textContent="randomly initialized";render(false);
+}
+function weightColor(value){const strength=Math.min(0.82,0.17+Math.abs(value)*0.11);return value>=0?"rgba(77,130,234,"+strength+")":"rgba(238,137,71,"+strength+")";}
+function render(pulse){
+  const state=evaluate(),selected=state.details[selectedDigit],x=examples[selectedDigit].x;
+  Array.from(screen.children).forEach(function(pixel,i){pixel.classList.toggle("on",Boolean(x[i]));});
+  Array.from(digitSelect.children).forEach(function(button,d){button.classList.toggle("selected",d===selectedDigit);});
+  Array.from(neuronRows.children).forEach(function(row,k){
+    const out=selected.outputs[k];row.classList.toggle("target",k===selectedDigit);row.classList.toggle("predicted",k===selected.predicted);row.classList.toggle("wrong-prediction",selected.wrong&&k===selected.predicted);
+    Array.from(row.querySelectorAll(".weight")).forEach(function(cell,i){cell.style.background=weightColor(W[k][i]);if(pulse){cell.classList.add("changed");setTimeout(function(){cell.classList.remove("changed");},fastMode.checked?12:75);}});
+    row.querySelector(".z-value").textContent="z = "+out.z.toFixed(2);row.querySelector(".bias").textContent="b = "+B[k].toFixed(2);row.querySelector(".output-node").textContent=Math.round(out.p*100)+"%";
+    if(pulse){const sum=row.querySelector(".sum-node"),activation=row.querySelector(".activation-box");sum.classList.add("active");activation.classList.add("active");setTimeout(function(){sum.classList.remove("active");activation.classList.remove("active");},fastMode.checked?18:105);}
+  });
+  totalLossEl.textContent=state.total.toFixed(3);classificationErrorEl.textContent=state.errors+" / 5";stepValue.textContent=String(step);
+  Array.from(exampleGrid.children).forEach(function(card,d){const item=state.details[d];card.classList.toggle("selected",d===selectedDigit);card.classList.toggle("incorrect",item.wrong);card.querySelector(".tag").textContent=item.wrong?"incorrect":"correct";card.querySelector(".example-prediction").textContent="prediction: "+item.predicted;card.querySelector(".example-loss").textContent="loss: "+item.loss.toFixed(3);});
+  drawChart();return state;
+}
+function svgElement(name,attrs,text){const element=document.createElementNS("http://www.w3.org/2000/svg",name);Object.keys(attrs||{}).forEach(function(key){element.setAttribute(key,String(attrs[key]));});if(text!==undefined)element.textContent=text;return element;}
+function drawChart(){
+  while(chart.firstChild)chart.removeChild(chart.firstChild);
+  const left=42,right=606,top=10,bottom=141,width=right-left,height=bottom-top,maxStep=Math.max(10,history.length?history[history.length-1].step:10),maxLoss=Math.max(1,history.reduce(function(m,p){return Math.max(m,p.loss);},0)*1.08);
+  function sx(v){return left+(v/maxStep)*width;}function syLoss(v){return bottom-(v/maxLoss)*height;}function syError(v){return bottom-(v/5)*height;}
+  [0,0.5,1].forEach(function(t){const y=top+t*height;chart.appendChild(svgElement("line",{x1:left,y1:y,x2:right,y2:y,class:"grid"}));});
+  chart.appendChild(svgElement("line",{x1:left,y1:top,x2:left,y2:bottom,class:"axis"}));chart.appendChild(svgElement("line",{x1:right,y1:top,x2:right,y2:bottom,class:"axis"}));chart.appendChild(svgElement("line",{x1:left,y1:bottom,x2:right,y2:bottom,class:"axis"}));
+  chart.appendChild(svgElement("text",{x:left-7,y:top+4,"text-anchor":"end"},maxLoss.toFixed(1)));chart.appendChild(svgElement("text",{x:left-7,y:bottom+4,"text-anchor":"end"},"0"));chart.appendChild(svgElement("text",{x:right+7,y:top+4},"5"));chart.appendChild(svgElement("text",{x:right+7,y:bottom+4},"0"));
+  chart.appendChild(svgElement("text",{x:left,y:164,"text-anchor":"middle"},"0"));chart.appendChild(svgElement("text",{x:right,y:164,"text-anchor":"middle"},String(maxStep)));chart.appendChild(svgElement("text",{x:(left+right)/2,y:164,"text-anchor":"middle"},"learning step"));
+  if(history.length){const lossPoints=history.map(function(p){return sx(p.step)+","+syLoss(p.loss);}).join(" "),errorPoints=history.map(function(p){return sx(p.step)+","+syError(p.error);}).join(" ");chart.appendChild(svgElement("polyline",{points:lossPoints,class:"loss-line"}));chart.appendChild(svgElement("polyline",{points:errorPoints,class:"error-line"}));const last=history[history.length-1];chart.appendChild(svgElement("circle",{cx:sx(last.step),cy:syLoss(last.loss),r:3.2,class:"dot-loss"}));chart.appendChild(svgElement("circle",{cx:sx(last.step),cy:syError(last.error),r:3.2,class:"dot-error"}));}
+}
+function finish(message){running=false;autoLearn.disabled=false;autoLearn.classList.remove("optimizing");autoLearn.textContent="Auto-learn";randomize.disabled=false;statusText.textContent=message;}
+function learningStep(){
+  if(!running)return;const baseState=evaluate(),baseLoss=baseState.total,directions=Array.from({length:DETECTORS},function(){return new Array(INPUTS+1).fill(0);});
+  for(let k=0;k<DETECTORS;k++){
+    for(let j=0;j<=INPUTS;j++){
+      const isBias=j===INPUTS,original=isBias?B[k]:W[k][j];
+      if(isBias)B[k]=original+PROBE;else W[k][j]=original+PROBE;const plus=evaluate().total;
+      if(isBias)B[k]=original-PROBE;else W[k][j]=original-PROBE;const minus=evaluate().total;
+      if(isBias)B[k]=original;else W[k][j]=original;
+      if(plus<baseLoss-1e-12||minus<baseLoss-1e-12)directions[k][j]=plus<minus?1:-1;
+    }
+  }
+  const oldW=W.map(function(row){return row.slice();}),oldB=B.slice();let any=false;
+  for(let k=0;k<DETECTORS;k++){for(let j=0;j<INPUTS;j++){W[k][j]+=UPDATE*directions[k][j];if(directions[k][j])any=true;}B[k]+=UPDATE*directions[k][INPUTS];if(directions[k][INPUTS])any=true;}
+  if(!any){finish("no ±0.01 move improves the loss");return;}
+  const candidate=evaluate();if(candidate.total>=baseLoss-1e-12){W=oldW;B=oldB;render(false);finish("simultaneous step no longer improves the loss");return;}
+  step+=1;history.push({step:step,loss:candidate.total,error:candidate.errors});render(true);
+  if(candidate.total<=TARGET_LOSS&&candidate.errors===0){finish("loss target reached");return;}if(step>=MAX_STEPS){finish("maximum steps reached");return;}
+  setTimeout(learningStep,fastMode.checked?6:60);
+}
+function startLearning(){if(running)return;running=true;autoLearn.disabled=true;autoLearn.classList.add("optimizing");autoLearn.textContent="Optimizing…";randomize.disabled=true;statusText.textContent="testing ±0.01 and updating";setTimeout(learningStep,fastMode.checked?10:100);}
+autoLearn.addEventListener("click",startLearning);randomize.addEventListener("click",randomizeWeights);randomizeWeights();
+})();
+</script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

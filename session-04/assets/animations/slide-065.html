@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RNN vs Transformer - Hidden Representation Flow</title>
+  <style>
+    :root {
+      --ink: #17324f;
+      --muted: #7289a0;
+      --paper: #ffffff;
+      --panel: #f7f9fb;
+      --cell: #edf3f8;
+      --line: #cbdbe8;
+      --rnn: #8fa9c1;
+      --rnn-soft: #e2ebf3;
+      --transformer: #4f73f1;
+      --transformer-soft: #dfe7ff;
+      --focus: #ff835f;
+      --focus-soft: #fde0d5;
+      --bar-a: #4f73f1;
+      --bar-b: #9ab5ca;
+      --bar-c: #ff9f62;
+      --shadow: 0 14px 34px rgba(36, 76, 118, .09);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input { font: inherit; }
+
+    .page {
+      width: min(1580px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: clamp(22px, 2.7vw, 46px);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: clamp(16px, 1.8vw, 26px);
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 3.7vw, 58px);
+      line-height: .98;
+      letter-spacing: -.045em;
+      font-weight: 790;
+    }
+
+    .subtitle {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.35vw, 19px);
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-line { width: 24px; height: 3px; border-radius: 3px; background: var(--transformer); }
+    .legend-line.focus { background: var(--focus); }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 11px 13px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      box-shadow: 0 8px 24px rgba(36, 76, 118, .05);
+    }
+
+    .primary {
+      min-width: 94px;
+      padding: 10px 18px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--ink);
+      color: white;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    .icon-button {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: white;
+      color: var(--ink);
+      font-size: 19px;
+      cursor: pointer;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 185px;
+    }
+
+    .control-group label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    input[type="range"] { width: 112px; accent-color: var(--transformer); }
+    output { min-width: 22px; font-size: 13px; font-weight: 820; }
+
+    .global-status {
+      margin-left: auto;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #edf3f8;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .global-status.running { background: var(--transformer-soft); color: #315bcf; }
+    .global-status.done { background: var(--focus-soft); color: #b94d2d; }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(14px, 1.8vw, 24px);
+      min-height: 570px;
+    }
+
+    .model {
+      --accent: var(--rnn);
+      --soft: var(--rnn-soft);
+      position: relative;
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 16px;
+      padding: clamp(18px, 2vw, 28px);
+      border: 1.5px solid var(--line);
+      border-radius: 25px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .model.transformer { --accent: var(--transformer); --soft: var(--transformer-soft); }
+
+    .model::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 5px;
+      background: var(--accent);
+    }
+
+    .model-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .model-name {
+      margin: 0;
+      color: var(--accent);
+      font-size: clamp(23px, 2.1vw, 34px);
+      letter-spacing: -.03em;
+    }
+
+    .model-desc {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .model-state { min-width: 116px; text-align: right; }
+    .step-number {
+      display: block;
+      font-size: clamp(25px, 2.7vw, 38px);
+      font-weight: 830;
+      line-height: 1;
+      letter-spacing: -.04em;
+      font-variant-numeric: tabular-nums;
+    }
+    .step-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 820;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+
+    .flow-stage {
+      position: relative;
+      min-height: 400px;
+      isolation: isolate;
+    }
+
+    .flow-grid {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      grid-template-rows: repeat(4, 1fr);
+      column-gap: 9px;
+      row-gap: 9px;
+      align-items: center;
+    }
+
+    .layer-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 820;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      text-align: right;
+      line-height: 1.2;
+    }
+
+    .node-row {
+      display: grid;
+      grid-template-columns: repeat(var(--tokens), minmax(0, 1fr));
+      gap: clamp(5px, .6vw, 9px);
+      align-items: center;
+    }
+
+    .node-wrap {
+      min-width: 0;
+      display: grid;
+      justify-items: center;
+      gap: 5px;
+    }
+
+    .state-node {
+      width: 100%;
+      min-width: 0;
+      height: clamp(46px, 4.5vw, 62px);
+      display: grid;
+      place-items: center;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      background: var(--cell);
+      opacity: .36;
+      transition: opacity 160ms ease, transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .state-node.ready {
+      opacity: 1;
+      border-color: color-mix(in srgb, var(--accent), white 24%);
+      background: var(--soft);
+    }
+
+    .state-node.computing {
+      opacity: 1;
+      transform: translateY(-3px) scale(1.045);
+      border-color: var(--focus);
+      background: #fff5f0;
+      box-shadow: 0 8px 20px rgba(255, 131, 95, .24);
+    }
+
+    .state-node.new-state {
+      opacity: 1;
+      border-color: var(--focus);
+      background: var(--focus-soft);
+    }
+
+    .vector {
+      height: 30px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 6px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, .68);
+    }
+
+    .bar { width: 7px; border-radius: 4px; }
+    .bar:nth-child(1) { height: 21px; background: var(--bar-a); }
+    .bar:nth-child(2) { height: 15px; background: var(--bar-b); }
+    .bar:nth-child(3) { height: 24px; background: var(--bar-c); }
+
+    .token-label {
+      min-height: 13px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: clamp(8px, .72vw, 11px);
+      font-weight: 760;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .upper .token-label { visibility: hidden; }
+
+    .flow-svg,
+    .packet-layer {
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .packet-layer { z-index: 4; }
+
+    .dependency-line {
+      fill: none;
+      stroke: var(--focus);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      opacity: .72;
+      stroke-dasharray: 5 6;
+      animation: dash 650ms linear infinite;
+    }
+
+    .dependency-line.vertical { stroke: var(--transformer); opacity: .58; }
+    .dependency-line.horizontal { stroke: var(--focus); opacity: .8; }
+
+    @keyframes dash { to { stroke-dashoffset: -22; } }
+
+    .packet {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 25px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 3px 4px;
+      border: 1.5px solid var(--focus);
+      border-radius: 6px;
+      background: white;
+      box-shadow: 0 4px 10px rgba(36, 76, 118, .15);
+      transform: translate(-50%, -50%);
+      will-change: transform;
+    }
+
+    .packet i { display: block; width: 3px; border-radius: 2px; }
+    .packet i:nth-child(1) { height: 10px; background: var(--bar-a); }
+    .packet i:nth-child(2) { height: 7px; background: var(--bar-b); }
+    .packet i:nth-child(3) { height: 12px; background: var(--bar-c); }
+
+    .mix-label {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      color: var(--transformer);
+      font-size: 10px;
+      font-weight: 830;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      opacity: 0;
+      transition: opacity 150ms ease;
+      white-space: nowrap;
+    }
+
+    .mix-label.visible { opacity: 1; }
+
+    .model-summary {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--soft), white 35%);
+      font-size: clamp(13px, 1.05vw, 16px);
+      font-weight: 780;
+      text-align: center;
+    }
+
+    .takeaway {
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      font-size: clamp(15px, 1.5vw, 22px);
+      font-weight: 770;
+      text-align: center;
+    }
+
+    .takeaway strong { color: var(--transformer); }
+    .takeaway .focus { color: #cf5836; }
+
+    @media (max-width: 900px) {
+      .page { padding: 19px; }
+      header { align-items: start; }
+      .legend { display: none; }
+      .comparison { grid-template-columns: 1fr; }
+      .global-status { margin-left: 0; }
+      .model { min-height: 580px; }
+      .flow-stage { min-height: 410px; }
+      .state-node { height: 54px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .state-node, .mix-label { transition: none; }
+      .dependency-line { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>How hidden representations flow</h1>
+        <p class="subtitle">Each small three-bar capsule represents one token's hidden state.</p>
+      </div>
+      <div class="legend" aria-label="Animation legend">
+        <span class="legend-item"><i class="legend-line"></i>Previous layer</span>
+        <span class="legend-item"><i class="legend-line focus"></i>Same-layer dependency</span>
+      </div>
+    </header>
+
+    <section class="controls" aria-label="Animation controls">
+      <button class="primary" id="playButton" type="button">Play</button>
+      <button class="icon-button" id="resetButton" type="button" aria-label="Reset animation" title="Reset">↺</button>
+      <div class="control-group">
+        <label for="lengthSlider">Sentence length</label>
+        <input id="lengthSlider" type="range" min="4" max="7" value="6" step="1" />
+        <output id="lengthOutput" for="lengthSlider">6</output>
+      </div>
+      <div class="control-group">
+        <label for="speedSlider">Speed</label>
+        <input id="speedSlider" type="range" min="1" max="4" value="2" step="1" />
+        <output id="speedOutput" for="speedSlider">1×</output>
+      </div>
+      <div class="global-status" id="globalStatus" aria-live="polite">Ready</div>
+    </section>
+
+    <section class="comparison">
+      <article class="model rnn" id="rnnModel">
+        <div class="model-head">
+          <div>
+            <h2 class="model-name">RNN</h2>
+            <p class="model-desc">Sequential within each layer, pipelined across layers.</p>
+          </div>
+          <div class="model-state">
+            <span class="step-number" id="rnnSteps">0</span>
+            <span class="step-label">diagonal waves</span>
+          </div>
+        </div>
+        <div class="flow-stage" id="rnnStage">
+          <svg class="flow-svg" aria-hidden="true"></svg>
+          <div class="packet-layer" aria-hidden="true"></div>
+          <div class="flow-grid"></div>
+        </div>
+        <div class="model-summary" id="rnnSummary">States on the same diagonal can be computed together.</div>
+      </article>
+
+      <article class="model transformer" id="transformerModel">
+        <div class="model-head">
+          <div>
+            <h2 class="model-name">Transformer</h2>
+            <p class="model-desc">Uses preceding tokens from the previous layer.</p>
+          </div>
+          <div class="model-state">
+            <span class="step-number" id="transformerSteps">0</span>
+            <span class="step-label">layer steps</span>
+          </div>
+        </div>
+        <div class="flow-stage" id="transformerStage">
+          <svg class="flow-svg" aria-hidden="true"></svg>
+          <div class="packet-layer" aria-hidden="true"></div>
+          <div class="mix-label">Attention mixes previous-layer states</div>
+          <div class="flow-grid"></div>
+        </div>
+        <div class="model-summary" id="transformerSummary">No token depends on another token in the same layer.</div>
+      </article>
+    </section>
+
+    <footer class="takeaway" id="takeaway">Press Play to follow the hidden representations.</footer>
+  </main>
+
+  <script>
+    const WORDS = ["The", "small", "cat", "sat", "on", "the", "mat"];
+    const LAYERS = 3;
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    const playButton = document.querySelector("#playButton");
+    const resetButton = document.querySelector("#resetButton");
+    const lengthSlider = document.querySelector("#lengthSlider");
+    const speedSlider = document.querySelector("#speedSlider");
+    const lengthOutput = document.querySelector("#lengthOutput");
+    const speedOutput = document.querySelector("#speedOutput");
+    const globalStatus = document.querySelector("#globalStatus");
+    const takeaway = document.querySelector("#takeaway");
+    const rnnStepsEl = document.querySelector("#rnnSteps");
+    const transformerStepsEl = document.querySelector("#transformerSteps");
+    const rnnSummary = document.querySelector("#rnnSummary");
+    const transformerSummary = document.querySelector("#transformerSummary");
+
+    const models = {
+      rnn: setupModel("rnnStage"),
+      transformer: setupModel("transformerStage")
+    };
+
+    let runId = 0;
+    let playing = false;
+    let paused = false;
+    let rnnSteps = 0;
+    let transformerSteps = 0;
+
+    function setupModel(stageId) {
+      const stage = document.querySelector(`#${stageId}`);
+      return {
+        stage,
+        grid: stage.querySelector(".flow-grid"),
+        svg: stage.querySelector(".flow-svg"),
+        packets: stage.querySelector(".packet-layer"),
+        mixLabel: stage.querySelector(".mix-label"),
+        nodes: []
+      };
+    }
+
+    function vectorMarkup() {
+      return '<span class="vector"><i class="bar"></i><i class="bar"></i><i class="bar"></i></span>';
+    }
+
+    function renderModel(model, tokenCount) {
+      model.grid.innerHTML = "";
+      model.nodes = [];
+
+      for (let visualLayer = LAYERS; visualLayer >= 0; visualLayer--) {
+        const label = document.createElement("div");
+        label.className = "layer-label";
+        label.innerHTML = visualLayer === 0 ? "Input<br>states" : `Layer ${visualLayer}`;
+        model.grid.appendChild(label);
+
+        const row = document.createElement("div");
+        row.className = "node-row";
+        row.style.setProperty("--tokens", tokenCount);
+        const rowNodes = [];
+
+        for (let tokenIndex = 0; tokenIndex < tokenCount; tokenIndex++) {
+          const wrap = document.createElement("div");
+          wrap.className = `node-wrap ${visualLayer === 0 ? "input" : "upper"}`;
+          const node = document.createElement("div");
+          node.className = `state-node${visualLayer === 0 ? " ready" : ""}`;
+          node.innerHTML = vectorMarkup();
+          node.dataset.layer = visualLayer;
+          node.dataset.token = tokenIndex;
+          const token = document.createElement("span");
+          token.className = "token-label";
+          token.textContent = WORDS[tokenIndex];
+          wrap.append(node, token);
+          row.appendChild(wrap);
+          rowNodes.push(node);
+        }
+
+        model.grid.appendChild(row);
+        model.nodes[visualLayer] = rowNodes;
+      }
+    }
+
+    function render() {
+      const tokenCount = Number(lengthSlider.value);
+      renderModel(models.rnn, tokenCount);
+      renderModel(models.transformer, tokenCount);
+      lengthOutput.value = tokenCount;
+      resetView();
+    }
+
+    function resetView() {
+      runId++;
+      playing = false;
+      paused = false;
+      rnnSteps = 0;
+      transformerSteps = 0;
+      rnnStepsEl.textContent = "0";
+      transformerStepsEl.textContent = "0";
+      playButton.textContent = "Play";
+      globalStatus.textContent = "Ready";
+      globalStatus.className = "global-status";
+      takeaway.textContent = "Press Play to follow the hidden representations.";
+      rnnSummary.textContent = "States on the same diagonal can be computed together.";
+      transformerSummary.textContent = "No token depends on another token in the same layer.";
+
+      Object.values(models).forEach(model => {
+        model.svg.innerHTML = "";
+        model.packets.innerHTML = "";
+        if (model.mixLabel) model.mixLabel.classList.remove("visible");
+        model.nodes.forEach((row, layer) => row.forEach(node => {
+          node.className = `state-node${layer === 0 ? " ready" : ""}`;
+        }));
+      });
+    }
+
+    function duration() {
+      return [0, 780, 560, 390, 270][Number(speedSlider.value)];
+    }
+
+    function wait(ms, id) {
+      return new Promise(resolve => {
+        const tick = () => {
+          if (id !== runId) return resolve(false);
+          if (paused) return setTimeout(tick, 60);
+          setTimeout(() => resolve(id === runId), ms);
+        };
+        tick();
+      });
+    }
+
+    function centerInStage(model, element) {
+      const stageRect = model.stage.getBoundingClientRect();
+      const rect = element.getBoundingClientRect();
+      return {
+        x: rect.left - stageRect.left + rect.width / 2,
+        y: rect.top - stageRect.top + rect.height / 2
+      };
+    }
+
+    function makeLine(model, from, to, type) {
+      const line = document.createElementNS(SVG_NS, "line");
+      line.setAttribute("x1", from.x);
+      line.setAttribute("y1", from.y);
+      line.setAttribute("x2", to.x);
+      line.setAttribute("y2", to.y);
+      line.setAttribute("class", `dependency-line ${type}`);
+      model.svg.appendChild(line);
+      return line;
+    }
+
+    function makePacket(model, from) {
+      const packet = document.createElement("div");
+      packet.className = "packet";
+      packet.innerHTML = "<i></i><i></i><i></i>";
+      packet.style.left = `${from.x}px`;
+      packet.style.top = `${from.y}px`;
+      model.packets.appendChild(packet);
+      return packet;
+    }
+
+    async function movePackets(model, dependencies, id, type = "vertical") {
+      if (id !== runId) return false;
+      const lines = [];
+      const packets = [];
+      const animations = [];
+      const ms = duration();
+
+      dependencies.forEach(({ source, target, lineType = type }) => {
+        const from = centerInStage(model, source);
+        const to = centerInStage(model, target);
+        lines.push(makeLine(model, from, to, lineType));
+        const packet = makePacket(model, from);
+        packets.push(packet);
+        animations.push(packet.animate([
+          { transform: "translate(-50%, -50%) scale(.82)", left: `${from.x}px`, top: `${from.y}px`, opacity: .65 },
+          { transform: "translate(-50%, -50%) scale(1)", left: `${to.x}px`, top: `${to.y}px`, opacity: 1 }
+        ], { duration: ms, easing: "cubic-bezier(.3,.05,.15,1)", fill: "forwards" }).finished);
+      });
+
+      await Promise.allSettled(animations);
+      if (id !== runId) return false;
+      packets.forEach(packet => packet.remove());
+      lines.forEach(line => line.remove());
+      return true;
+    }
+
+    async function animateRNN(id) {
+      const tokenCount = Number(lengthSlider.value);
+      const lastWave = tokenCount + LAYERS - 1;
+
+      for (let wave = 1; wave <= lastWave; wave++) {
+        if (id !== runId) return;
+        const waveNodes = [];
+        const dependencies = [];
+
+        for (let layer = 1; layer <= LAYERS; layer++) {
+          const token = wave - layer;
+          if (token < 0 || token >= tokenCount) continue;
+
+          const target = models.rnn.nodes[layer][token];
+          target.className = "state-node computing";
+          waveNodes.push({ target, layer, token });
+          dependencies.push({
+            source: models.rnn.nodes[layer - 1][token],
+            target,
+            lineType: "vertical"
+          });
+
+          if (token > 0) {
+            dependencies.push({
+              source: models.rnn.nodes[layer][token - 1],
+              target,
+              lineType: "horizontal"
+            });
+          }
+        }
+
+        const positions = waveNodes
+          .map(({ layer, token }) => `token ${token + 1} in Layer ${layer}`)
+          .join(" + ");
+        rnnSummary.textContent = waveNodes.length > 1
+          ? `In parallel: ${positions}`
+          : `Computing ${positions}`;
+        rnnSteps++;
+        rnnStepsEl.textContent = rnnSteps;
+        if (!await movePackets(models.rnn, dependencies, id)) return;
+        waveNodes.forEach(({ target }) => target.className = "state-node new-state");
+        if (!await wait(duration() * .18, id)) return;
+        waveNodes.forEach(({ target }) => target.className = "state-node ready");
+      }
+
+      rnnSummary.textContent = "Layers form a pipeline, but each layer still advances token by token.";
+    }
+
+    function positionMixLabel(model, layer) {
+      if (!model.mixLabel) return;
+      const lower = centerInStage(model, model.nodes[layer - 1][0]);
+      const upper = centerInStage(model, model.nodes[layer][0]);
+      model.mixLabel.style.top = `${(lower.y + upper.y) / 2 - 14}px`;
+    }
+
+    async function animateTransformer(id) {
+      const tokenCount = Number(lengthSlider.value);
+
+      for (let layer = 1; layer <= LAYERS; layer++) {
+        if (id !== runId) return;
+        const dependencies = [];
+        positionMixLabel(models.transformer, layer);
+        models.transformer.mixLabel.classList.add("visible");
+
+        for (let targetToken = 0; targetToken < tokenCount; targetToken++) {
+          const target = models.transformer.nodes[layer][targetToken];
+          target.className = "state-node computing";
+          for (let sourceToken = 0; sourceToken <= targetToken; sourceToken++) {
+            dependencies.push({
+              source: models.transformer.nodes[layer - 1][sourceToken],
+              target,
+              lineType: "vertical"
+            });
+          }
+        }
+
+        transformerSummary.textContent = `All Layer ${layer} states are computed together.`;
+        transformerSteps++;
+        transformerStepsEl.textContent = transformerSteps;
+        if (!await movePackets(models.transformer, dependencies, id)) return;
+        models.transformer.nodes[layer].forEach(node => node.className = "state-node new-state");
+        if (!await wait(duration() * .24, id)) return;
+        models.transformer.nodes[layer].forEach(node => node.className = "state-node ready");
+        models.transformer.mixLabel.classList.remove("visible");
+      }
+
+      transformerSummary.textContent = "Each layer advances as one parallel operation.";
+    }
+
+    async function runAnimation() {
+      if (playing) {
+        paused = !paused;
+        playButton.textContent = paused ? "Resume" : "Pause";
+        return;
+      }
+
+      resetView();
+      const id = runId;
+      playing = true;
+      playButton.textContent = "Pause";
+      globalStatus.textContent = "Representations are flowing";
+      globalStatus.className = "global-status running";
+      takeaway.innerHTML = "The RNN advances in <span class=\"focus\">diagonal waves</span> while the Transformer advances layer by layer.";
+
+      await Promise.all([animateRNN(id), animateTransformer(id)]);
+      if (id !== runId) return;
+
+      playing = false;
+      playButton.textContent = "Replay";
+      globalStatus.textContent = "Complete";
+      globalStatus.className = "global-status done";
+      const ratio = (rnnSteps / transformerSteps).toFixed(1);
+      takeaway.innerHTML = `RNN: <span class="focus">${rnnSteps} diagonal waves</span>. Transformer: <strong>${transformerSteps} parallel layer steps</strong> - ${ratio}× fewer.`;
+    }
+
+    playButton.addEventListener("click", runAnimation);
+    resetButton.addEventListener("click", resetView);
+    lengthSlider.addEventListener("input", render);
+    speedSlider.addEventListener("input", () => {
+      speedOutput.value = ["", "0.7×", "1×", "1.5×", "2×"][Number(speedSlider.value)];
+    });
+    window.addEventListener("resize", () => {
+      Object.values(models).forEach(model => {
+        model.svg.innerHTML = "";
+        model.packets.innerHTML = "";
+      });
+    });
+
+    render();
+    speedOutput.value = "1×";
+  </script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

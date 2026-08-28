@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vector as Data</title>
+  <style>
+    :root {
+      --ink: #182033;
+      --muted: #718096;
+      --accent: #d84f4f;
+      --paper: #ffffff;
+      --page: #f4f6fa;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--page);
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+    }
+
+    main {
+      width: min(640px, 100%);
+      min-height: min(920px, calc(100vh - 48px));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 25px;
+      padding: clamp(28px, 6vw, 48px);
+      border: 1px solid #e7ebf1;
+      border-radius: 28px;
+      background: var(--paper);
+      box-shadow: 0 22px 60px rgba(38, 50, 75, 0.11);
+    }
+
+    header { align-self: stretch; text-align: center; }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(29px, 6vw, 43px);
+      line-height: 1.04;
+      letter-spacing: -0.05em;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 650;
+    }
+
+    .section {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .image-grid {
+      --row: 0;
+      --column: 0;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(12, 20px);
+      grid-template-rows: repeat(12, 20px);
+      overflow: hidden;
+      padding: 7px;
+      border: 3px solid var(--ink);
+      border-radius: 15px;
+      background: var(--ink);
+      box-shadow: 0 12px 28px rgba(24, 32, 51, 0.16);
+      image-rendering: pixelated;
+    }
+
+    .pixel {
+      background: rgb(var(--shade), var(--shade), var(--shade));
+      box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+    }
+
+    .scan {
+      position: absolute;
+      z-index: 3;
+      top: 7px;
+      left: 7px;
+      width: calc((100% - 14px) / 12);
+      height: calc((100% - 14px) / 12);
+      border: 3px solid var(--accent);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92), 0 3px 12px rgba(77, 20, 20, 0.3);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(
+        calc(var(--column) * 100%),
+        calc(var(--row) * 100%)
+      );
+      transition: transform 135ms ease, opacity 150ms ease;
+    }
+
+    .scan.visible { opacity: 1; }
+
+    .dimensions {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .flatten {
+      position: relative;
+      width: 3px;
+      height: 74px;
+      margin-block: -3px;
+      background: repeating-linear-gradient(
+        to bottom,
+        var(--accent) 0 8px,
+        transparent 8px 14px
+      );
+    }
+
+    .flatten::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -2px;
+      width: 14px;
+      height: 14px;
+      border-right: 3px solid var(--accent);
+      border-bottom: 3px solid var(--accent);
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .flatten span {
+      position: absolute;
+      top: 50%;
+      left: 18px;
+      width: max-content;
+      padding: 5px 9px;
+      border: 1px solid #f0d5d5;
+      border-radius: 999px;
+      color: #a83a3a;
+      background: #fff6f6;
+      font-size: 12px;
+      font-weight: 850;
+      transform: translateY(-50%);
+    }
+
+    .target {
+      align-self: stretch;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+    }
+
+    .vector-wrap {
+      position: relative;
+      width: 100%;
+      padding: 14px 21px;
+    }
+
+    .bracket {
+      position: absolute;
+      inset-block: 0;
+      width: 14px;
+      border-block: 3px solid var(--ink);
+    }
+
+    .bracket.left {
+      left: 0;
+      border-left: 3px solid var(--ink);
+      border-radius: 7px 0 0 7px;
+    }
+
+    .bracket.right {
+      right: 0;
+      border-right: 3px solid var(--ink);
+      border-radius: 0 7px 7px 0;
+    }
+
+    .vector {
+      display: grid;
+      grid-template-columns: repeat(144, minmax(0, 1fr));
+      gap: 1px;
+      height: 40px;
+    }
+
+    .value {
+      min-width: 0;
+      border-radius: 1px;
+      background: rgb(var(--shade), var(--shade), var(--shade));
+      opacity: 0.07;
+      transform: translateY(-6px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .value.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .mapping {
+      margin: 0;
+      color: var(--ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(10px, 2.2vw, 13px);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .note {
+      margin: -2px 0 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 3px;
+      padding: 10px 18px;
+      border: 0;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--ink);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 7px 18px rgba(24, 32, 51, 0.16);
+      transition: transform 120ms ease, box-shadow 120ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); box-shadow: 0 10px 23px rgba(24, 32, 51, 0.2); }
+    button:focus-visible { outline: 3px solid rgba(216, 79, 79, 0.28); outline-offset: 4px; }
+    button:disabled { cursor: default; opacity: 0.72; }
+
+    .replay-icon { font-size: 16px; line-height: 1; }
+
+    @media (max-width: 470px) {
+      main { min-height: auto; gap: 21px; padding: 27px 17px; border-radius: 22px; }
+      .image-grid {
+        grid-template-columns: repeat(12, 16px);
+        grid-template-rows: repeat(12, 16px);
+      }
+      .flatten { height: 66px; }
+      .vector-wrap { padding-inline: 15px; }
+      .vector { height: 34px; gap: 0; }
+      .mapping { letter-spacing: -0.04em; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Vector as Data</h1>
+      <p class="subtitle">A computer can represent an image as a sequence of pixel values.</p>
+    </header>
+
+    <section class="section" aria-label="A small grayscale image of a tree">
+      <div class="label">Grayscale image</div>
+      <div class="image-grid" id="image">
+        <div class="scan" id="scan" aria-hidden="true"></div>
+      </div>
+      <div class="dimensions">12 rows × 12 columns</div>
+    </section>
+
+    <div class="flatten" aria-hidden="true"><span>Flatten pixel by pixel</span></div>
+
+    <section class="target" aria-label="A 144-dimensional output vector">
+      <div class="label">One-dimensional vector</div>
+      <div class="vector-wrap">
+        <span class="bracket left" aria-hidden="true"></span>
+        <div class="vector" id="vector"></div>
+        <span class="bracket right" aria-hidden="true"></span>
+      </div>
+      <p class="mapping" id="mapping">Pixel 1 → vector[1] = 242</p>
+      <p class="note">12 × 12 pixels = 144 numerical values</p>
+    </section>
+
+    <button type="button" id="replay"><span class="replay-icon">↻</span> Replay flattening</button>
+  </main>
+
+  <script>
+    const pixels = [
+      242,242,242,242,230,215,230,242,242,242,242,242,
+      242,242,238,225,205,190,205,225,238,242,242,242,
+      242,238,222,170,105,82,105,170,222,238,242,242,
+      240,225,175,92,66,54,66,92,175,225,240,242,
+      238,198,86,60,46,40,46,60,86,198,238,242,
+      235,180,74,50,40,36,40,50,74,180,235,240,
+      238,205,112,72,56,52,56,72,112,205,238,242,
+      242,232,212,142,94,88,94,142,212,232,242,242,
+      236,226,214,200,172,92,92,172,200,214,226,236,
+      211,205,198,188,165,94,94,165,188,198,205,211,
+      188,183,178,172,160,98,98,160,172,178,183,188,
+      170,166,163,160,157,154,154,157,160,163,166,170
+    ];
+
+    const image = document.querySelector('#image');
+    const vector = document.querySelector('#vector');
+    const scan = document.querySelector('#scan');
+    const replay = document.querySelector('#replay');
+    const mapping = document.querySelector('#mapping');
+    const targetCells = [];
+    let animationRun = 0;
+    const demonstratedPixels = 36;
+
+    pixels.forEach((value, index) => {
+      const source = document.createElement('div');
+      source.className = 'pixel';
+      source.style.setProperty('--shade', value);
+      source.setAttribute('aria-label', `Pixel ${index + 1}, intensity ${value}`);
+      image.insertBefore(source, scan);
+
+      const target = document.createElement('div');
+      target.className = 'value';
+      target.style.setProperty('--shade', value);
+      vector.appendChild(target);
+      targetCells.push(target);
+    });
+
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function animate() {
+      const run = ++animationRun;
+      replay.disabled = true;
+      scan.classList.remove('visible');
+      targetCells.forEach(cell => cell.classList.remove('visible'));
+      image.style.setProperty('--row', 0);
+      image.style.setProperty('--column', 0);
+      mapping.textContent = 'Pixel 1 → vector[1] = 242';
+      await wait(260);
+      scan.classList.add('visible');
+
+      for (let index = 0; index < demonstratedPixels; index++) {
+        if (run !== animationRun) return;
+        const row = Math.floor(index / 12);
+        const column = index % 12;
+        image.style.setProperty('--row', row);
+        image.style.setProperty('--column', column);
+        mapping.textContent = `Pixel ${index + 1} → vector[${index + 1}] = ${pixels[index]}`;
+        await wait(145);
+        targetCells[index].classList.add('visible');
+        await wait(65);
+      }
+
+      mapping.textContent = '…continues pixel by pixel through vector[144]';
+      replay.disabled = false;
+    }
+
+    replay.addEventListener('click', animate);
+    window.addEventListener('load', () => setTimeout(animate, 420));
+  </script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sigmoid Perceptron — Auto-learning Digit 3</title>
+<style>
+:root{
+  --ink:#171717;--muted:#6e6e6e;--line:#ddd;--panel:#fff;--soft:#f6f6f6;
+  --green:#91db63;--orange:#f6b36b;--blue:#b9deed;--blue-strong:#276ef1;
+  --red:#b52b2b;--red-soft:#fff0ef;--off:#f2f2f2;--on:#222;--pulse:#e53935;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+.wrap{width:1280px;max-width:100%;margin:0 auto;padding:22px;overflow-x:auto}
+h1{font-size:24px;margin:0 0 5px}.subtitle{color:var(--muted);margin-bottom:16px}
+.card{min-width:1180px;border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 6px 24px rgba(0,0,0,.05);background:var(--panel)}
+.diagram{position:relative;width:1140px;height:326px;margin:auto}
+.layer{position:absolute;top:25px;text-align:center;z-index:2}
+.input{left:15px;width:190px}.weights-layer{left:230px;width:190px}.sum-layer{left:450px;width:210px}
+.activation-layer{left:715px;width:230px}.output-layer{left:1000px;width:120px}
+.layer-title{color:#9b2424;font-size:17px;margin-top:10px}.small{font-size:12px;color:var(--muted)}
+.screen,.weight-grid{display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(5,40px);gap:5px;justify-content:center;margin:8px auto}
+.pixel{background:var(--off);border:1px solid #d7d7d7;border-radius:6px;transition:.16s;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.pixel.on{background:var(--on);transform:scale(1.04)}.pixel.numeric{background:#fff;color:var(--ink);transform:none}
+.weight{border-radius:6px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1px solid #bbb;transition:background .12s,transform .12s}
+.weight.changed{transform:scale(1.06)}
+.sum-node{width:172px;height:172px;border-radius:50%;background:var(--orange);margin:13px auto 0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid rgba(0,0,0,.08);transition:.18s}
+.sum-node.active{box-shadow:0 0 0 9px rgba(247,178,103,.16),0 0 26px rgba(247,178,103,.42)}
+.sigma{font-size:48px;line-height:.9}.eq{font-size:13px}.score{font-size:22px;font-weight:700;margin-top:6px}
+.activation-box{background:var(--blue);border-radius:11px;padding:20px 16px;min-height:142px;margin-top:30px;display:flex;flex-direction:column;justify-content:center;border:2px solid rgba(0,0,0,.05);transition:.18s}
+.activation-box.active{box-shadow:0 0 0 9px rgba(80,170,210,.13),0 0 24px rgba(80,170,210,.3)}
+.fx{font-size:18px;font-weight:700;margin-bottom:10px}.formula{font-size:16px;line-height:1.35}.range{font-size:11px;color:#52636a;margin-top:8px}
+.output{width:94px;height:94px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;margin:60px auto 4px;font-size:23px;font-weight:700;border:2px solid #aaa;transition:.18s}
+.output.positive{background:var(--green);border-color:#6cb53e}.output.wrong{box-shadow:0 0 0 7px rgba(181,43,43,.14);border-color:var(--red)}
+#connectors{position:absolute;inset:0;width:1140px;height:326px;z-index:1;pointer-events:none}.connector{stroke:#222;stroke-width:2.1;fill:none}.arrowhead{fill:#222}.signal{fill:var(--pulse);opacity:0}
+.bottom{display:grid;grid-template-columns:440px 1fr;gap:16px;border-top:1px solid #ececec;padding-top:16px}
+.panel{border:1px solid #e1e1e1;border-radius:12px;padding:13px;background:#fff;min-height:230px}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}.panel-title{font-weight:700}.metric{text-align:right}.metric b{font-size:22px;display:block}.metric span{font-size:11px;color:var(--muted)}
+.digit-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.digit-card{border:1px solid #d7d7d7;border-radius:9px;background:#fff;padding:7px;cursor:pointer;text-align:left;min-height:72px}
+.digit-card.selected{border:2px solid var(--blue-strong);padding:6px}.digit-card.incorrect{background:var(--red-soft);border-color:#e2aaa6}
+.digit-top{display:flex;justify-content:space-between;align-items:center}.digit-label{font-size:19px;font-weight:700}.tag{font-size:10px;color:var(--muted)}
+.digit-prob{font-size:12px;margin-top:5px}.digit-loss{font-size:11px;color:var(--muted);margin-top:2px}
+.chart-wrap{height:182px}.chart{width:100%;height:100%;display:block}.axis{stroke:#aaa;stroke-width:1}.grid{stroke:#e7e7e7;stroke-width:1}.loss-line{fill:none;stroke:var(--blue-strong);stroke-width:2.4}.error-line{fill:none;stroke:var(--red);stroke-width:2.4}.dot-loss{fill:var(--blue-strong)}.dot-error{fill:var(--red)}
+.chart text{font-family:Arial,Helvetica,sans-serif;font-size:10px;fill:#666}.legend{display:flex;gap:16px;font-size:11px;color:var(--muted);margin-top:4px}.swatch{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px}.swatch.loss{background:var(--blue-strong)}.swatch.error{background:var(--red)}
+.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:14px}
+button{padding:9px 13px;border-radius:9px;border:1px solid #c9c9c9;background:#fff;cursor:pointer;font-size:14px}button:hover{background:#f5f5f5}button:disabled{cursor:default}
+button.primary{background:var(--blue-strong);color:#fff;border-color:var(--blue-strong);min-width:125px}button.primary.optimizing{background:#9a9a9a;border-color:#9a9a9a}
+.speed{display:flex;align-items:center;gap:5px;font-size:13px}.status{margin-left:auto;font-size:12px;color:var(--muted)}.status b{color:var(--ink)}
+.method{font-size:11px;color:var(--muted);margin-top:8px}
+@media(max-width:760px){.wrap{padding:10px}}
+@media(prefers-reduced-motion:reduce){.pixel,.weight,.sum-node,.activation-box,.output{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Teaching a perceptron to recognize the digit “3”</h1>
+  <div class="subtitle">Random weights → sigmoid probability → compare guesses → improve the weights</div>
+  <div class="card">
+    <div class="diagram">
+      <svg id="connectors" viewBox="0 0 1140 326" aria-hidden="true">
+        <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" class="arrowhead"/></marker></defs>
+        <path id="c1" class="connector" d="M195 157 L235 157" marker-end="url(#arrow)"/><path id="c2" class="connector" d="M405 157 L455 157" marker-end="url(#arrow)"/>
+        <path id="c3" class="connector" d="M650 157 L720 157" marker-end="url(#arrow)"/><path id="c4" class="connector" d="M935 157 L1005 157" marker-end="url(#arrow)"/>
+        <circle id="p1" class="signal" r="6"/><circle id="p2" class="signal" r="6"/><circle id="p3" class="signal" r="6"/><circle id="p4" class="signal" r="6"/>
+      </svg>
+      <section class="layer input">
+        <div class="screen" id="screen"></div><div class="small" id="inputLegend">black = 1 · white = 0</div><div class="layer-title">Inputs</div>
+      </section>
+      <section class="layer weights-layer">
+        <div class="weight-grid" id="weights"></div><div class="small">blue supports · orange opposes</div><div class="layer-title">Weights</div>
+      </section>
+      <section class="layer sum-layer">
+        <div class="sum-node" id="sumNode"><div class="sigma">Σ</div><div class="eq">sum = weighted inputs</div><div class="score" id="score">0.00</div></div>
+        <div class="layer-title">Summation</div>
+      </section>
+      <section class="layer activation-layer">
+        <div class="activation-box" id="activation"><div class="fx">sigmoid(sum)</div><div class="formula">turns the sum into a smooth probability</div><div class="range">from 0% to 100%</div></div>
+        <div class="layer-title">Activation</div>
+      </section>
+      <section class="layer output-layer">
+        <div class="output" id="output">50%</div><div class="small" id="decision">probability of 3</div><div class="small">error: <b id="selectedLoss">0.00</b></div><div class="layer-title">Prediction</div>
+      </section>
+    </div>
+
+    <div class="bottom">
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">How wrong is each guess?</div><div class="metric"><b id="totalLoss">0.00</b><span>total learning error</span></div></div>
+        <div class="digit-grid" id="digitGrid"></div>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Learning progress</div><div class="metric"><b id="classificationError">0 / 10</b><span>wrong guesses</span></div></div>
+        <div class="chart-wrap"><svg id="historyChart" class="chart" viewBox="0 0 650 182" role="img" aria-label="Learning error and wrong guesses during training"></svg></div>
+        <div class="legend"><span><i class="swatch loss"></i>Learning error</span><span><i class="swatch error"></i>Wrong digits</span></div>
+      </section>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="autoLearn">Auto-learn</button>
+      <button id="randomize">New random weights</button>
+      <button id="pixelMode">Show 1s &amp; 0s</button>
+      <label class="speed"><input type="checkbox" id="fastMode"> Fast mode</label>
+      <div class="status">Step <b id="stepValue">0</b> · <span id="statusText">ready</span></div>
+    </div>
+    <div class="method">Each step tries tiny changes, keeps the ones that improve the guesses, and repeats.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const digits={
+  0:["111","101","101","101","111"],1:["010","110","010","010","111"],
+  2:["111","001","111","100","111"],3:["111","001","111","001","111"],
+  4:["101","101","111","001","001"],5:["111","100","111","001","111"],
+  6:["111","100","111","101","111"],7:["111","001","010","010","010"],
+  8:["111","101","111","101","111"],9:["111","101","111","001","111"]
+};
+const flatten=rows=>rows.join("").split("").map(Number);
+const examples=Array.from({length:10},(_,digit)=>({digit,x:flatten(digits[digit]),target:digit===3?1:0}));
+const PROBE=0.01,UPDATE=0.01,TARGET_LOSS=0.10,MAX_STEPS=1200;
+let W=new Array(15).fill(0),OFFSET=0,selectedDigit=3,step=0,running=false,history=[],numericPixels=false;
+
+const byId=id=>document.getElementById(id);
+const screen=byId("screen"),weightsGrid=byId("weights"),digitGrid=byId("digitGrid");
+const score=byId("score"),output=byId("output"),decision=byId("decision"),selectedLoss=byId("selectedLoss");
+const totalLossEl=byId("totalLoss"),classificationErrorEl=byId("classificationError"),chart=byId("historyChart");
+const autoLearn=byId("autoLearn"),randomize=byId("randomize"),pixelMode=byId("pixelMode"),fastMode=byId("fastMode");
+const stepValue=byId("stepValue"),statusText=byId("statusText"),sumNode=byId("sumNode"),activation=byId("activation"),inputLegend=byId("inputLegend");
+
+for(let i=0;i<15;i++){
+  const pixel=document.createElement("div");pixel.className="pixel";screen.appendChild(pixel);
+  const weight=document.createElement("div");weight.className="weight";weightsGrid.appendChild(weight);
+}
+for(let digit=0;digit<10;digit++){
+  const card=document.createElement("button");card.className="digit-card";card.type="button";card.dataset.digit=String(digit);
+  card.innerHTML='<div class="digit-top"><span class="digit-label">'+digit+'</span><span class="tag"></span></div><div class="digit-prob"></div><div class="digit-loss"></div>';
+  card.addEventListener("click",()=>{selectedDigit=digit;render(false);animateForward();});digitGrid.appendChild(card);
+}
+
+function sigmoid(sum){if(sum>=0){const q=Math.exp(-sum);return 1/(1+q);}const q=Math.exp(sum);return q/(1+q);}
+function binaryLoss(probability,target){const clipped=Math.max(1e-12,Math.min(1-1e-12,probability));return -(target*Math.log(clipped)+(1-target)*Math.log(1-clipped));}
+function evaluate(weights,offset){
+  const details=examples.map(example=>{
+    let sum=offset;for(let i=0;i<15;i++)sum+=weights[i]*example.x[i];
+    const probability=sigmoid(sum),loss=binaryLoss(probability,example.target),predicted=probability>=0.5?1:0;
+    return {digit:example.digit,target:example.target,sum,probability,loss,wrong:predicted!==example.target};
+  });
+  return {details,total:details.reduce((value,item)=>value+item.loss,0),errors:details.filter(item=>item.wrong).length};
+}
+function randomParameter(){return Math.random()*0.7-0.35;}
+function weightColor(value){const strength=Math.min(0.78,0.16+Math.abs(value)*0.12);return value>=0?"rgba(77,130,234,"+strength+")":"rgba(238,137,71,"+strength+")";}
+
+function travel(dotId,pathId,delay=0,duration=330){
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const dot=byId(dotId),path=byId(pathId),length=path.getTotalLength(),start=performance.now()+delay;
+  dot.animate([{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.88},{opacity:0}],{duration,delay,easing:"linear"});
+  function frame(now){const t=Math.max(0,Math.min(1,(now-start)/duration)),point=path.getPointAtLength(length*t);dot.setAttribute("cx",point.x);dot.setAttribute("cy",point.y);if(t<1)requestAnimationFrame(frame);}
+  requestAnimationFrame(frame);
+}
+function animateForward(){
+  travel("p1","c1",0);travel("p2","c2",250);
+  setTimeout(()=>sumNode.classList.add("active"),500);setTimeout(()=>sumNode.classList.remove("active"),770);
+  travel("p3","c3",540);setTimeout(()=>activation.classList.add("active"),790);setTimeout(()=>activation.classList.remove("active"),1060);travel("p4","c4",830);
+}
+function renderPixels(input){
+  Array.from(screen.children).forEach((pixel,index)=>{
+    pixel.classList.toggle("numeric",numericPixels);pixel.classList.toggle("on",!numericPixels&&Boolean(input[index]));pixel.textContent=numericPixels?String(input[index]):"";
+  });
+  pixelMode.textContent=numericPixels?"Show pixels":"Show 1s & 0s";inputLegend.textContent=numericPixels?"binary input values":"black = 1 · white = 0";
+}
+function randomizeWeights(){
+  if(running)return;W=W.map(randomParameter);OFFSET=randomParameter();step=0;history=[];
+  const state=evaluate(W,OFFSET);history.push({step:0,loss:state.total,error:state.errors});statusText.textContent="randomly initialized";render(false);animateForward();
+}
+function render(pulse){
+  const state=evaluate(W,OFFSET),selected=state.details[selectedDigit],input=examples[selectedDigit].x;
+  renderPixels(input);
+  Array.from(weightsGrid.children).forEach((cell,index)=>{
+    cell.textContent=(W[index]>=0?"+":"")+W[index].toFixed(2);cell.style.background=weightColor(W[index]);cell.style.color=Math.abs(W[index])>2.2?"#fff":"#171717";
+    if(pulse){cell.classList.add("changed");setTimeout(()=>cell.classList.remove("changed"),Math.max(30,fastMode.checked?8:55));}
+  });
+  score.textContent=selected.sum.toFixed(2);const percent=Math.round(selected.probability*100);
+  output.textContent=percent+"%";output.classList.toggle("positive",selected.probability>=0.5);output.classList.toggle("wrong",selected.wrong);
+  decision.textContent=selected.probability>=0.5?"classified as 3":"classified as not 3";selectedLoss.textContent=selected.loss.toFixed(3);
+  totalLossEl.textContent=state.total.toFixed(3);classificationErrorEl.textContent=state.errors+" / 10";stepValue.textContent=String(step);
+  Array.from(digitGrid.children).forEach((card,digit)=>{
+    const item=state.details[digit];card.classList.toggle("selected",digit===selectedDigit);card.classList.toggle("incorrect",item.wrong);
+    card.querySelector(".tag").textContent=item.wrong?"incorrect":"correct";card.querySelector(".digit-prob").textContent="chance of 3: "+Math.round(item.probability*100)+"%";card.querySelector(".digit-loss").textContent="error: "+item.loss.toFixed(3);
+  });
+  if(pulse){sumNode.classList.add("active");activation.classList.add("active");setTimeout(()=>{sumNode.classList.remove("active");activation.classList.remove("active");},fastMode.checked?18:100);}
+  drawChart();return state;
+}
+function svgElement(name,attributes,text){
+  const element=document.createElementNS("http://www.w3.org/2000/svg",name);Object.keys(attributes||{}).forEach(key=>element.setAttribute(key,String(attributes[key])));if(text!==undefined)element.textContent=text;return element;
+}
+function drawChart(){
+  while(chart.firstChild)chart.removeChild(chart.firstChild);
+  const left=42,right=606,top=12,bottom=151,width=right-left,height=bottom-top;
+  const maxStep=Math.max(10,history.length?history[history.length-1].step:10),maxLoss=Math.max(1,history.reduce((maximum,point)=>Math.max(maximum,point.loss),0)*1.08);
+  const sx=value=>left+(value/maxStep)*width,syLoss=value=>bottom-(value/maxLoss)*height,syError=value=>bottom-(value/10)*height;
+  [0,0.5,1].forEach(t=>{const y=top+t*height;chart.appendChild(svgElement("line",{x1:left,y1:y,x2:right,y2:y,class:"grid"}));});
+  chart.appendChild(svgElement("line",{x1:left,y1:top,x2:left,y2:bottom,class:"axis"}));chart.appendChild(svgElement("line",{x1:right,y1:top,x2:right,y2:bottom,class:"axis"}));chart.appendChild(svgElement("line",{x1:left,y1:bottom,x2:right,y2:bottom,class:"axis"}));
+  chart.appendChild(svgElement("text",{x:left-7,y:top+4,"text-anchor":"end"},maxLoss.toFixed(1)));chart.appendChild(svgElement("text",{x:left-7,y:bottom+4,"text-anchor":"end"},"0"));
+  chart.appendChild(svgElement("text",{x:right+7,y:top+4},"10"));chart.appendChild(svgElement("text",{x:right+7,y:bottom+4},"0"));chart.appendChild(svgElement("text",{x:left,y:174,"text-anchor":"middle"},"0"));chart.appendChild(svgElement("text",{x:right,y:174,"text-anchor":"middle"},String(maxStep)));chart.appendChild(svgElement("text",{x:(left+right)/2,y:174,"text-anchor":"middle"},"learning step"));
+  if(history.length){
+    chart.appendChild(svgElement("polyline",{points:history.map(point=>sx(point.step)+","+syLoss(point.loss)).join(" "),class:"loss-line"}));chart.appendChild(svgElement("polyline",{points:history.map(point=>sx(point.step)+","+syError(point.error)).join(" "),class:"error-line"}));
+    const last=history[history.length-1];chart.appendChild(svgElement("circle",{cx:sx(last.step),cy:syLoss(last.loss),r:3.2,class:"dot-loss"}));chart.appendChild(svgElement("circle",{cx:sx(last.step),cy:syError(last.error),r:3.2,class:"dot-error"}));
+  }
+}
+function lossWithParameter(index,value){
+  if(index<15){const candidate=W.slice();candidate[index]=value;return evaluate(candidate,OFFSET).total;}return evaluate(W,value).total;
+}
+function finish(message){running=false;autoLearn.disabled=false;autoLearn.classList.remove("optimizing");autoLearn.textContent="Auto-learn";randomize.disabled=false;statusText.textContent=message;}
+function learningStep(){
+  if(!running)return;const baseState=evaluate(W,OFFSET),baseLoss=baseState.total,parameters=W.concat([OFFSET]),directions=new Array(16).fill(0);
+  for(let index=0;index<16;index++){
+    const plus=lossWithParameter(index,parameters[index]+PROBE),minus=lossWithParameter(index,parameters[index]-PROBE);
+    if(plus<baseLoss-1e-12||minus<baseLoss-1e-12)directions[index]=plus<minus?1:-1;
+  }
+  if(!directions.some(direction=>direction!==0)){finish("no small change improves the guesses");return;}
+  const candidateW=W.map((value,index)=>value+UPDATE*directions[index]),candidateOffset=OFFSET+UPDATE*directions[15],candidateState=evaluate(candidateW,candidateOffset);
+  if(candidateState.total>=baseLoss-1e-12){finish("no further improvement found");return;}
+  W=candidateW;OFFSET=candidateOffset;step+=1;history.push({step,loss:candidateState.total,error:candidateState.errors});render(true);
+  if(step%(fastMode.checked?60:18)===0)animateForward();
+  if(candidateState.total<=TARGET_LOSS){finish("learning complete");return;}if(step>=MAX_STEPS){finish("maximum steps reached");return;}
+  setTimeout(learningStep,fastMode.checked?7:70);
+}
+function startLearning(){
+  if(running)return;running=true;autoLearn.disabled=true;autoLearn.classList.add("optimizing");autoLearn.textContent="Learning…";randomize.disabled=true;statusText.textContent="trying small changes";animateForward();setTimeout(learningStep,100);
+}
+autoLearn.addEventListener("click",startLearning);randomize.addEventListener("click",randomizeWeights);
+pixelMode.addEventListener("click",()=>{numericPixels=!numericPixels;renderPixels(examples[selectedDigit].x);});
+randomizeWeights();
+})();
+</script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

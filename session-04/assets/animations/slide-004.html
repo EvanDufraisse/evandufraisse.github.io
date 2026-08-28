@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive 8-Dimensional Vector</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #73809a;
+      --line: #dfe5ee;
+      --panel: #ffffff;
+      --page: #f4f6fa;
+      --accent: #d74b4b;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--page);
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: 28px 16px;
+    }
+
+    .stage {
+      width: min(620px, 100%);
+      min-height: min(900px, calc(100vh - 56px));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 28px;
+      padding: clamp(24px, 5vw, 44px);
+      background: var(--panel);
+      border: 1px solid #e8ecf2;
+      border-radius: 28px;
+      box-shadow: 0 22px 60px rgba(38, 50, 75, 0.11);
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 5vw, 36px);
+      line-height: 1.05;
+      letter-spacing: -0.045em;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: auto 76px auto;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .legend-bar {
+      height: 8px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #3f76d3, #f2f3f6 50%, #e35555);
+    }
+
+    .vector-wrap {
+      position: relative;
+      padding: 17px 22px;
+    }
+
+    .bracket {
+      position: absolute;
+      inset-block: 0;
+      width: 15px;
+      border-block: 3px solid var(--ink);
+    }
+
+    .bracket.left {
+      left: 0;
+      border-left: 3px solid var(--ink);
+      border-radius: 7px 0 0 7px;
+    }
+
+    .bracket.right {
+      right: 0;
+      border-right: 3px solid var(--ink);
+      border-radius: 0 7px 7px 0;
+    }
+
+    .vector {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .cell {
+      aspect-ratio: 1 / 1.08;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      font-size: clamp(11px, 2.6vw, 17px);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+      transition: background-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .cell.changed {
+      animation: nudge 220ms ease-out;
+    }
+
+    @keyframes nudge {
+      50% { transform: translateY(-4px) scale(1.035); }
+    }
+
+    .controls {
+      display: grid;
+      gap: 13px;
+    }
+
+    .control {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr) 58px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .index {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    output {
+      justify-self: end;
+      min-width: 54px;
+      padding: 5px 7px;
+      border-radius: 8px;
+      color: #fff;
+      text-align: center;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      transition: background-color 160ms ease;
+    }
+
+    input[type="range"] {
+      --value: 50%;
+      --thumb: #a8afbb;
+      width: 100%;
+      height: 20px;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 7px;
+      border-radius: 99px;
+      background:
+        linear-gradient(90deg, #3f76d3, #eef0f4 50%, #e35555),
+        #eef0f4;
+      box-shadow: inset 0 0 0 1px rgba(28, 39, 61, 0.08);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 7px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #3f76d3, #eef0f4 50%, #e35555);
+      box-shadow: inset 0 0 0 1px rgba(28, 39, 61, 0.08);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 19px;
+      height: 19px;
+      margin-top: -6px;
+      appearance: none;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      background: var(--thumb);
+      box-shadow: 0 2px 8px rgba(24, 32, 50, 0.28);
+      transition: transform 120ms ease, background-color 160ms ease;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 15px;
+      height: 15px;
+      border: 3px solid #fff;
+      border-radius: 50%;
+      background: var(--thumb);
+      box-shadow: 0 2px 8px rgba(24, 32, 50, 0.28);
+    }
+
+    input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.18); }
+    input[type="range"]:focus-visible { outline: 3px solid rgba(63, 118, 211, 0.25); outline-offset: 5px; }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 9px 16px;
+      color: var(--ink);
+      background: #fff;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #bcc5d3;
+      box-shadow: 0 5px 14px rgba(24, 32, 50, 0.08);
+    }
+
+    button.primary {
+      border-color: var(--ink);
+      color: #fff;
+      background: var(--ink);
+    }
+
+    @media (max-width: 470px) {
+      .stage { min-height: auto; gap: 23px; padding: 25px 18px; border-radius: 22px; }
+      header { align-items: start; flex-direction: column; }
+      .legend { align-self: stretch; grid-template-columns: auto 1fr auto; }
+      .vector-wrap { padding-inline: 15px; }
+      .vector { gap: 3px; }
+      .cell { border-radius: 7px; font-size: 10px; }
+      .control { grid-template-columns: 26px minmax(0, 1fr) 52px; gap: 8px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <header>
+      <h1>Vector as Parameters</h1>
+      <div class="legend" aria-label="Color scale from negative to positive">
+        <span>−1</span><span class="legend-bar"></span><span>+1</span>
+      </div>
+    </header>
+
+    <section class="vector-wrap" aria-label="Eight-dimensional vector">
+      <span class="bracket left" aria-hidden="true"></span>
+      <div class="vector" id="vector"></div>
+      <span class="bracket right" aria-hidden="true"></span>
+    </section>
+
+    <section class="controls" id="controls" aria-label="Vector value controls"></section>
+
+    <div class="actions">
+      <button type="button" id="zero">Set to zero</button>
+      <button type="button" class="primary" id="randomize">Randomize</button>
+    </div>
+  </main>
+
+  <script>
+    const initial = [0.72, -0.36, 0.18, 0.91, -0.78, 0.45, -0.08, 0.62];
+    const vector = document.querySelector('#vector');
+    const controls = document.querySelector('#controls');
+    const cells = [];
+    const sliders = [];
+    const outputs = [];
+
+    function mix(a, b, t) {
+      return a.map((value, i) => Math.round(value + (b[i] - value) * t));
+    }
+
+    function colorFor(value) {
+      const neutral = [238, 240, 244];
+      const blue = [63, 118, 211];
+      const red = [227, 85, 85];
+      const rgb = value < 0
+        ? mix(neutral, blue, Math.abs(value))
+        : mix(neutral, red, value);
+      return `rgb(${rgb.join(', ')})`;
+    }
+
+    function textColorFor(value) {
+      return Math.abs(value) >= 0.48 ? '#ffffff' : '#172033';
+    }
+
+    function display(value) {
+      const number = Number(value);
+      if (Math.abs(number) < 0.005) return '0.00';
+      return `${number > 0 ? '+' : ''}${number.toFixed(2)}`;
+    }
+
+    function render(index, animate = true) {
+      const value = Number(sliders[index].value);
+      const color = colorFor(value);
+      cells[index].textContent = display(value);
+      cells[index].style.backgroundColor = color;
+      cells[index].style.color = textColorFor(value);
+      outputs[index].textContent = display(value);
+      outputs[index].style.backgroundColor = color;
+      outputs[index].style.color = textColorFor(value);
+      sliders[index].style.setProperty('--thumb', color);
+      sliders[index].setAttribute('aria-valuetext', display(value));
+
+      if (animate) {
+        cells[index].classList.remove('changed');
+        void cells[index].offsetWidth;
+        cells[index].classList.add('changed');
+      }
+    }
+
+    initial.forEach((value, index) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.setAttribute('aria-label', `Dimension ${index + 1}`);
+      vector.appendChild(cell);
+      cells.push(cell);
+
+      const row = document.createElement('label');
+      row.className = 'control';
+      row.innerHTML = `
+        <span class="index">v<sub>${index + 1}</sub></span>
+        <input type="range" min="-1" max="1" step="0.01" value="${value}"
+          aria-label="Dimension ${index + 1}" />
+        <output></output>
+      `;
+      controls.appendChild(row);
+
+      const slider = row.querySelector('input');
+      const output = row.querySelector('output');
+      sliders.push(slider);
+      outputs.push(output);
+      slider.addEventListener('input', () => render(index));
+      render(index, false);
+    });
+
+    function setAll(values) {
+      sliders.forEach((slider, index) => {
+        slider.value = values[index];
+        render(index);
+      });
+    }
+
+    document.querySelector('#zero').addEventListener('click', () => setAll(Array(8).fill(0)));
+    document.querySelector('#randomize').addEventListener('click', () => {
+      setAll(Array.from({ length: 8 }, () => (Math.random() * 2 - 1).toFixed(2)));
+    });
+  </script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

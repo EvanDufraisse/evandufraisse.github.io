@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Binary Perceptron — Digit 3 Detector</title>
+<style>
+:root{
+  --ink:#161616;--muted:#6f6f6f;--green:#9be36c;--orange:#f7b267;
+  --blue:#b9deed;--red:#a51f1f;--off:#f2f2f2;--on:#222;--pulse:#e53935;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font-family:Arial,Helvetica,sans-serif}
+.wrap{width:1280px;max-width:100%;margin:0 auto;padding:24px;overflow-x:auto}
+h1{font-size:24px;margin:0 0 6px}.subtitle{color:var(--muted);margin-bottom:18px}
+.card{min-width:1180px;border:1px solid #ddd;border-radius:16px;padding:18px;box-shadow:0 6px 24px rgba(0,0,0,.05)}
+.diagram{position:relative;width:1140px;height:360px;margin:auto}
+.layer{position:absolute;top:32px;text-align:center;z-index:2}
+.input{left:15px;width:190px}.weights-layer{left:230px;width:190px}.sum-layer{left:450px;width:210px}
+.activation-layer{left:715px;width:230px}.output-layer{left:1000px;width:120px}
+.layer-title{color:var(--red);font-size:17px;margin-top:13px}.small{font-size:12px;color:var(--muted)}
+.screen,.weight-grid{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(5,42px);gap:5px;justify-content:center;margin:10px auto}
+.pixel{background:var(--off);border:1px solid #d7d7d7;border-radius:6px;transition:.25s;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px}
+.pixel.on{background:var(--on);transform:scale(1.04)}.pixel.numeric{background:#fff;color:var(--ink);transform:none}
+.weight{border-radius:6px;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1px solid #bbb}
+.weight.pos{background:#e9f0ff}.weight.neg{background:#fff0e7}
+.sum-node{width:180px;height:180px;border-radius:50%;background:var(--orange);margin:20px auto 0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid rgba(0,0,0,.08);transition:.3s}
+.sum-node.active{box-shadow:0 0 0 10px rgba(247,178,103,.16),0 0 28px rgba(247,178,103,.42)}
+.sigma{font-size:52px;line-height:.9}.eq{font-size:13px}.score{font-size:23px;font-weight:800;margin-top:7px}
+.activation-box{background:var(--blue);border-radius:11px;padding:20px 16px;min-height:150px;margin-top:35px;display:flex;flex-direction:column;justify-content:center;border:2px solid rgba(0,0,0,.05);transition:.3s}
+.activation-box.active{box-shadow:0 0 0 10px rgba(80,170,210,.13),0 0 26px rgba(80,170,210,.3)}
+.fx{font-size:18px;font-weight:700;margin-bottom:12px}.rule{font-size:17px;line-height:1.55}.rule b{display:inline-block;min-width:18px}.range{font-size:11px;color:#52636a;margin-top:8px}
+.output{width:92px;height:92px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;margin:70px auto 0;font-size:30px;font-weight:800;border:2px solid #aaa;transition:.3s}
+.output.active{background:var(--green);border-color:#6cb53e;box-shadow:0 0 26px rgba(108,181,62,.35)}
+#connectors{position:absolute;inset:0;width:1140px;height:360px;z-index:1;pointer-events:none}.connector{stroke:#222;stroke-width:2.1;fill:none}.arrowhead{fill:#222}.signal{fill:var(--pulse);opacity:0}
+.controls{border-top:1px solid #eee;margin-top:8px;padding-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button{padding:8px 12px;border-radius:9px;border:1px solid #ccc;background:#fff;cursor:pointer;font-size:14px}
+button:hover{background:#f6f6f6}button.selected{background:#161616;color:#fff;border-color:#161616}button.primary{background:#276ef1;color:#fff;border-color:#276ef1}
+.readout{display:flex;gap:18px;margin-left:auto;font-size:13px;color:#555}.readout b{color:#111}
+@media(prefers-reduced-motion:reduce){.pixel,.sum-node,.activation-box,.output{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Perceptron detecting the digit “3”</h1>
+  <div class="subtitle">3×5 input → weights → weighted sum → hard 0/1 decision</div>
+
+  <div class="card">
+    <div class="diagram">
+      <svg id="connectors" viewBox="0 0 1140 360" aria-hidden="true">
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" class="arrowhead"/>
+          </marker>
+        </defs>
+        <path id="c1" class="connector" d="M195 175 L235 175" marker-end="url(#arrow)"/>
+        <path id="c2" class="connector" d="M405 175 L455 175" marker-end="url(#arrow)"/>
+        <path id="c3" class="connector" d="M650 175 L720 175" marker-end="url(#arrow)"/>
+        <path id="c4" class="connector" d="M935 175 L1005 175" marker-end="url(#arrow)"/>
+        <circle id="p1" class="signal" r="6"/><circle id="p2" class="signal" r="6"/>
+        <circle id="p3" class="signal" r="6"/><circle id="p4" class="signal" r="6"/>
+      </svg>
+
+      <section class="layer input">
+        <div class="screen" id="screen"></div>
+        <div class="small" id="inputLegend">black = 1 · white = 0</div>
+        <div class="layer-title">Inputs</div>
+      </section>
+
+      <section class="layer weights-layer">
+        <div class="weight-grid" id="weights"></div>
+        <div class="small">blue supports · orange opposes</div>
+        <div class="layer-title">Weights</div>
+      </section>
+
+      <section class="layer sum-layer">
+        <div class="sum-node" id="sumNode">
+          <div class="sigma">Σ</div>
+          <div class="eq">sum = weighted inputs</div>
+          <div class="score" id="score">0.00</div>
+        </div>
+        <div class="layer-title">Summation</div>
+      </section>
+
+      <section class="layer activation-layer">
+        <div class="activation-box" id="activation">
+          <div class="fx">hard decision</div>
+          <div class="rule">negative sum → <b>0</b><br>zero or positive → <b>1</b></div>
+          <div class="range">only two possible outputs</div>
+        </div>
+        <div class="layer-title">Activation</div>
+      </section>
+
+      <section class="layer output-layer">
+        <div class="output" id="output">0</div>
+        <div class="small" id="decision">not 3</div>
+        <div class="layer-title">Output</div>
+      </section>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="auto">▶ Auto</button>
+      <button id="prev" aria-label="Previous digit">←</button>
+      <button id="next" aria-label="Next digit">→</button>
+      <button id="pixelMode">Show 1s &amp; 0s</button>
+      <span class="small">Digit:</span>
+      <span id="digitButtons"></span>
+      <div class="readout">
+        <span>decision point: <b>sum 0</b></span>
+        <span>sum: <b id="sumReadout">0.00</b></span>
+        <span>output: <b id="outputReadout">0</b></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const digits={
+0:["111","101","101","101","111"],1:["010","110","010","010","111"],
+2:["111","001","111","100","111"],3:["111","001","111","001","111"],
+4:["101","101","111","001","001"],5:["111","100","111","001","111"],
+6:["111","100","111","101","111"],7:["111","001","010","010","010"],
+8:["111","101","111","101","111"],9:["111","101","111","001","111"]
+};
+const flatten=rows=>rows.join("").split("").map(Number);
+const target=flatten(digits[3]);
+const weightsForThree=target.map(value=>value?0.80:-0.80);
+const DECISION_OFFSET=target.reduce((sum,value)=>sum+value,0)*0.80-0.40;
+
+const screen=document.getElementById("screen");
+const weights=document.getElementById("weights");
+const sumNode=document.getElementById("sumNode");
+const activation=document.getElementById("activation");
+const score=document.getElementById("score");
+const output=document.getElementById("output");
+const decision=document.getElementById("decision");
+const sumReadout=document.getElementById("sumReadout");
+const outputReadout=document.getElementById("outputReadout");
+const auto=document.getElementById("auto");
+const next=document.getElementById("next");
+const prev=document.getElementById("prev");
+const pixelMode=document.getElementById("pixelMode");
+const inputLegend=document.getElementById("inputLegend");
+
+for(let i=0;i<15;i++){
+  const pixel=document.createElement("div");pixel.className="pixel";screen.appendChild(pixel);
+  const weight=document.createElement("div");weight.className="weight "+(weightsForThree[i]>0?"pos":"neg");
+  weight.textContent=(weightsForThree[i]>0?"+":"")+weightsForThree[i].toFixed(2);weights.appendChild(weight);
+}
+const buttons=document.getElementById("digitButtons");
+for(let digit=0;digit<10;digit++){
+  const button=document.createElement("button");button.textContent=digit;button.dataset.digit=digit;button.style.marginRight="4px";
+  button.onclick=()=>{stopAuto();showDigit(digit);};buttons.appendChild(button);
+}
+
+let current=0,timer=null,numericPixels=false;
+const sumFor=input=>input.reduce((sum,value,index)=>sum+weightsForThree[index]*value,-DECISION_OFFSET);
+
+function travel(dotId,pathId,delay=0,duration=420){
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const dot=document.getElementById(dotId),path=document.getElementById(pathId),length=path.getTotalLength();
+  dot.animate([{opacity:0},{opacity:1,offset:.12},{opacity:1,offset:.88},{opacity:0}],{duration,delay,easing:"linear"});
+  const start=performance.now()+delay;
+  function frame(now){
+    const t=Math.max(0,Math.min(1,(now-start)/duration)),point=path.getPointAtLength(length*t);
+    dot.setAttribute("cx",point.x);dot.setAttribute("cy",point.y);if(t<1)requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+function animate(active){
+  travel("p1","c1",0);travel("p2","c2",300);
+  setTimeout(()=>sumNode.classList.add("active"),620);setTimeout(()=>sumNode.classList.remove("active"),900);
+  travel("p3","c3",650);
+  setTimeout(()=>activation.classList.add("active"),970);setTimeout(()=>activation.classList.remove("active"),1250);
+  if(active)travel("p4","c4",1030);
+}
+function renderPixels(input){
+  Array.from(screen.children).forEach((pixel,index)=>{
+    pixel.classList.toggle("numeric",numericPixels);
+    pixel.classList.toggle("on",!numericPixels&&Boolean(input[index]));
+    pixel.textContent=numericPixels?String(input[index]):"";
+  });
+  pixelMode.textContent=numericPixels?"Show pixels":"Show 1s & 0s";
+  inputLegend.textContent=numericPixels?"binary input values":"black = 1 · white = 0";
+}
+function showDigit(digit){
+  current=Number(digit);const input=flatten(digits[current]),sum=sumFor(input),result=sum>=0?1:0;
+  renderPixels(input);
+  Array.from(buttons.children).forEach(button=>button.classList.toggle("selected",Number(button.dataset.digit)===current));
+  score.textContent=sum.toFixed(2);sumReadout.textContent=sum.toFixed(2);outputReadout.textContent=String(result);
+  output.textContent=String(result);output.classList.toggle("active",Boolean(result));decision.textContent=result?"3 detected":"not 3";
+  animate(Boolean(result));
+}
+function startAuto(){if(timer)return;auto.textContent="⏸ Pause";timer=setInterval(()=>showDigit((current+1)%10),1600);}
+function stopAuto(){if(timer)clearInterval(timer);timer=null;auto.textContent="▶ Auto";}
+auto.onclick=()=>timer?stopAuto():startAuto();
+next.onclick=()=>{stopAuto();showDigit((current+1)%10);};
+prev.onclick=()=>{stopAuto();showDigit((current+9)%10);};
+pixelMode.onclick=()=>{numericPixels=!numericPixels;renderPixels(flatten(digits[current]));};
+showDigit(0);
+</script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
+</body>
+</html>

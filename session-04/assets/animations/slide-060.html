@@ -1,0 +1,510 @@
+<meta charset="utf-8">
+<div id="query-key-value-attention">
+  <style>
+    #query-key-value-attention {
+      width: 100%;
+      color: #17324d;
+      background: transparent;
+      --qkv-navy: #17324d;
+      --qkv-blue: #4d74f4;
+      --qkv-blue-soft: #e9eefc;
+      --qkv-coral: #ff876a;
+      --qkv-coral-soft: #fff0e5;
+      --qkv-green: #29b879;
+      --qkv-green-soft: #ddf3ee;
+      --qkv-purple-soft: #eee7ff;
+      --qkv-sky-soft: #e5f4fa;
+      --qkv-panel: #f4f8fc;
+      --qkv-border: #ccdceb;
+      --qkv-muted: #70849a;
+      --qkv-vector: #a5bdd1;
+    }
+
+    #query-key-value-attention .qkv-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    #query-key-value-attention text {
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #query-key-value-attention .qkv-section {
+      font-size: 18px;
+      font-weight: 500;
+      fill: var(--qkv-navy);
+    }
+
+    #query-key-value-attention .qkv-sub {
+      font-size: 14px;
+      font-weight: 400;
+      fill: var(--qkv-muted);
+    }
+
+    #query-key-value-attention .qkv-small {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .65px;
+      fill: var(--qkv-muted);
+    }
+
+    #query-key-value-attention .qkv-token {
+      font-size: 16px;
+      font-weight: 500;
+      fill: var(--qkv-navy);
+    }
+
+    #query-key-value-attention .qkv-symbol {
+      font-size: 18px;
+      font-weight: 500;
+      fill: var(--qkv-navy);
+    }
+
+    #query-key-value-attention .qkv-layer {
+      fill: var(--qkv-panel);
+      stroke: var(--qkv-border);
+      stroke-width: 2;
+    }
+
+    #query-key-value-attention .qkv-stage {
+      opacity: .08;
+      transition: opacity .3s ease;
+    }
+
+    #query-key-value-attention .qkv-stage.is-visible {
+      opacity: 1;
+    }
+
+    #query-key-value-attention .qkv-stage.is-complete {
+      opacity: .18;
+    }
+
+    #query-key-value-attention .qkv-focus-card {
+      transition: fill .25s ease, stroke .25s ease, stroke-width .25s ease;
+    }
+
+    #query-key-value-attention .qkv-focus-card.is-active {
+      fill: var(--qkv-coral-soft);
+      stroke: var(--qkv-coral);
+      stroke-width: 2.5;
+    }
+
+    #query-key-value-attention .qkv-key {
+      fill: var(--qkv-blue-soft);
+      stroke: var(--qkv-blue);
+      stroke-width: 1.7;
+    }
+
+    #query-key-value-attention .qkv-value {
+      fill: var(--qkv-green-soft);
+      stroke: var(--qkv-green);
+      stroke-width: 1.7;
+    }
+
+    #query-key-value-attention .qkv-query {
+      fill: var(--qkv-coral-soft);
+      stroke: var(--qkv-coral);
+      stroke-width: 2.2;
+    }
+
+    #query-key-value-attention .qkv-match-path {
+      fill: none;
+      stroke: var(--qkv-coral);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 8 7;
+      animation: qkv-draw .75s ease forwards;
+    }
+
+    #query-key-value-attention .qkv-value-path {
+      fill: none;
+      stroke: var(--qkv-green);
+      stroke-linecap: round;
+      stroke-dasharray: 9 7;
+      animation: qkv-draw .8s ease forwards;
+    }
+
+    #query-key-value-attention .qkv-output {
+      opacity: .08;
+      transition: opacity .3s ease;
+    }
+
+    #query-key-value-attention .qkv-output.is-visible {
+      opacity: 1;
+    }
+
+    #query-key-value-attention .qkv-output-card {
+      transform-box: fill-box;
+      transform-origin: center;
+      transform: scale(.84);
+      transition: transform .32s ease, fill .25s ease, stroke .25s ease;
+    }
+
+    #query-key-value-attention .qkv-output.is-visible .qkv-output-card {
+      transform: scale(1);
+    }
+
+    #query-key-value-attention .qkv-controls {
+      justify-content: center;
+      margin-top: .5rem;
+    }
+
+    @keyframes qkv-draw {
+      from { stroke-dashoffset: 65; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #query-key-value-attention .qkv-stage,
+      #query-key-value-attention .qkv-focus-card,
+      #query-key-value-attention .qkv-output,
+      #query-key-value-attention .qkv-output-card {
+        transition: none;
+      }
+
+      #query-key-value-attention .qkv-match-path,
+      #query-key-value-attention .qkv-value-path {
+        animation: none;
+      }
+    }
+  </style>
+
+  <svg class="qkv-svg" viewBox="0 0 1000 590" role="img" aria-labelledby="qkv-title qkv-desc">
+    <title id="qkv-title">How query, keys and values create the last token representation</title>
+    <desc id="qkv-desc">The tokens The, cat and sat pass through an embedding layer. In one attention layer they produce keys and values. Only the query for the final token sat is followed. It matches the keys to produce attention weights, which determine how strongly the values contribute to the new representation of sat.</desc>
+
+    <defs>
+      <filter id="qkv-shadow" x="-20%" y="-20%" width="140%" height="150%">
+        <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#17324d" flood-opacity=".1"/>
+      </filter>
+      <marker id="qkv-arrow-blue" viewBox="0 0 10 10" refX="8.3" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 Z" fill="#4d74f4"/>
+      </marker>
+      <marker id="qkv-arrow-coral" viewBox="0 0 10 10" refX="8.3" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 Z" fill="#ff876a"/>
+      </marker>
+      <marker id="qkv-arrow-green" viewBox="0 0 10 10" refX="8.3" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 Z" fill="#29b879"/>
+      </marker>
+    </defs>
+
+    <!-- Output representation -->
+    <text x="760" y="18" text-anchor="middle" class="qkv-small">OUTPUT REPRESENTATION</text>
+    <g id="qkv-output" class="qkv-output" transform="translate(731 52)">
+      <text x="29" y="-8" text-anchor="middle" class="qkv-token">sat</text>
+      <rect class="qkv-output-card" width="58" height="44" rx="11" fill="#fff0e5" stroke="#ff876a" stroke-width="2"/>
+      <rect x="10" y="11" width="8" height="23" rx="3" fill="#f4a164"/>
+      <rect x="25" y="5" width="8" height="29" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="15" width="8" height="19" rx="3" fill="#a5bdd1"/>
+    </g>
+    <line id="qkv-output-arrow" x1="760" y1="158" x2="760" y2="101" fill="none" stroke="#29b879" stroke-width="4" stroke-linecap="round" marker-end="url(#qkv-arrow-green)" class="qkv-output"/>
+
+    <!-- Attention layer -->
+    <rect x="58" y="149" width="884" height="294" rx="28" class="qkv-layer" filter="url(#qkv-shadow)"/>
+    <rect x="86" y="135" width="166" height="29" rx="14.5" fill="#e9eefc"/>
+    <text x="169" y="155" text-anchor="middle" class="qkv-small" style="fill:#3e67d7">ATTENTION LAYER</text>
+
+    <rect x="500" y="135" width="412" height="29" rx="14.5" fill="#fff0e5" stroke="#ff876a" stroke-width="1.4"/>
+    <text id="qkv-step-caption" x="706" y="155" text-anchor="middle" class="qkv-small" style="fill:#b25a2a">1 - BUILD TOKEN EMBEDDINGS</text>
+
+    <!-- Compact Q/K/V definitions -->
+    <g transform="translate(84 195)">
+      <rect width="276" height="118" rx="19" fill="#ffffff" stroke="#d7e2ec" stroke-width="1.5"/>
+
+      <rect x="20" y="14" width="29" height="29" rx="9" class="qkv-query"/>
+      <text x="34.5" y="34" text-anchor="middle" class="qkv-symbol">Q</text>
+      <text x="62" y="34" class="qkv-sub">what “sat” is looking for</text>
+
+      <rect x="20" y="49" width="29" height="29" rx="9" class="qkv-key"/>
+      <text x="34.5" y="69" text-anchor="middle" class="qkv-symbol">K</text>
+      <text x="62" y="69" class="qkv-sub">what can be matched</text>
+
+      <rect x="20" y="84" width="29" height="29" rx="9" class="qkv-value"/>
+      <text x="34.5" y="104" text-anchor="middle" class="qkv-symbol">V</text>
+      <text x="62" y="104" class="qkv-sub">information to retrieve</text>
+    </g>
+
+    <!-- Query-to-key matching -->
+    <g id="qkv-match-stage" class="qkv-stage">
+      <path class="qkv-match-path" d="M875 294 C875 210 410 210 410 283" marker-end="url(#qkv-arrow-coral)"/>
+      <path class="qkv-match-path" d="M875 294 C875 235 580 235 580 283" marker-end="url(#qkv-arrow-coral)"/>
+      <path class="qkv-match-path" d="M875 294 C875 258 750 258 750 283" marker-end="url(#qkv-arrow-coral)"/>
+
+      <g transform="translate(386 245)">
+        <rect width="48" height="24" rx="12" fill="#fff0e5"/>
+        <text x="24" y="17" text-anchor="middle" class="qkv-small" style="fill:#b25a2a">10%</text>
+      </g>
+      <g transform="translate(556 245)">
+        <rect width="48" height="24" rx="12" fill="#fff0e5"/>
+        <text x="24" y="17" text-anchor="middle" class="qkv-small" style="fill:#b25a2a">30%</text>
+      </g>
+      <g transform="translate(726 245)">
+        <rect width="48" height="24" rx="12" fill="#fff0e5"/>
+        <text x="24" y="17" text-anchor="middle" class="qkv-small" style="fill:#b25a2a">60%</text>
+      </g>
+    </g>
+
+    <!-- Weighted value flow -->
+    <g id="qkv-value-stage" class="qkv-stage">
+      <path class="qkv-value-path" d="M470 285 C470 202 705 196 734 180" stroke-width="2.2" marker-end="url(#qkv-arrow-green)"/>
+      <path class="qkv-value-path" d="M640 285 C640 220 716 205 742 182" stroke-width="4" marker-end="url(#qkv-arrow-green)"/>
+      <path class="qkv-value-path" d="M810 285 C810 224 784 205 774 182" stroke-width="6.2" marker-end="url(#qkv-arrow-green)"/>
+
+      <g transform="translate(721 164)">
+        <rect width="78" height="40" rx="13" fill="#ddf3ee" stroke="#29b879" stroke-width="2"/>
+        <rect x="13" y="13" width="8" height="17" rx="3" fill="#29b879"/>
+        <rect x="29" y="8" width="8" height="22" rx="3" fill="#4d74f4"/>
+        <rect x="45" y="16" width="8" height="14" rx="3" fill="#a5bdd1"/>
+        <text x="63" y="26" class="qkv-symbol">+</text>
+      </g>
+      <text x="760" y="219" text-anchor="middle" class="qkv-small" style="fill:#18725f">WEIGHTED SUM</text>
+    </g>
+
+    <!-- K, V and the final token query -->
+    <g id="qkv-projection-stage" class="qkv-stage">
+      <g transform="translate(386 284)">
+        <rect width="48" height="38" rx="11" class="qkv-key"/>
+        <text x="24" y="25" text-anchor="middle" class="qkv-symbol">K</text>
+      </g>
+      <g transform="translate(446 284)">
+        <rect width="48" height="38" rx="11" class="qkv-value"/>
+        <text x="24" y="25" text-anchor="middle" class="qkv-symbol">V</text>
+      </g>
+
+      <g transform="translate(556 284)">
+        <rect width="48" height="38" rx="11" class="qkv-key"/>
+        <text x="24" y="25" text-anchor="middle" class="qkv-symbol">K</text>
+      </g>
+      <g transform="translate(616 284)">
+        <rect width="48" height="38" rx="11" class="qkv-value"/>
+        <text x="24" y="25" text-anchor="middle" class="qkv-symbol">V</text>
+      </g>
+
+      <g transform="translate(726 284)">
+        <rect width="48" height="38" rx="11" class="qkv-key"/>
+        <text x="24" y="25" text-anchor="middle" class="qkv-symbol">K</text>
+      </g>
+      <g transform="translate(786 284)">
+        <rect width="48" height="38" rx="11" class="qkv-value"/>
+        <text x="24" y="25" text-anchor="middle" class="qkv-symbol">V</text>
+      </g>
+      <g transform="translate(846 284)">
+        <rect width="48" height="38" rx="11" class="qkv-query"/>
+        <text x="24" y="25" text-anchor="middle" class="qkv-symbol">Q</text>
+      </g>
+
+      <g fill="none" stroke="#4d74f4" stroke-width="2.5" stroke-linecap="round" marker-end="url(#qkv-arrow-blue)" opacity=".72">
+        <path d="M420 372 L410 327"/>
+        <path d="M420 372 L470 327"/>
+        <path d="M590 372 L580 327"/>
+        <path d="M590 372 L640 327"/>
+        <path d="M760 372 L750 327"/>
+        <path d="M760 372 L810 327"/>
+        <path d="M760 372 C810 360 852 345 870 327" stroke="#ff876a" marker-end="url(#qkv-arrow-coral)"/>
+      </g>
+    </g>
+
+    <!-- Token representations inside the layer -->
+    <g transform="translate(391 369)">
+      <rect class="qkv-focus-card" data-qkv-focus="0" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="13" width="8" height="21" rx="3" fill="#4d74f4"/>
+      <rect x="25" y="7" width="8" height="27" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="18" width="8" height="16" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(561 369)">
+      <rect class="qkv-focus-card" data-qkv-focus="1" width="58" height="44" rx="11" fill="#edf3f9" stroke="#d6e2ed" stroke-width="1.5"/>
+      <rect x="10" y="17" width="8" height="17" rx="3" fill="#a5bdd1"/>
+      <rect x="25" y="9" width="8" height="25" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="14" width="8" height="20" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(731 369)">
+      <rect class="qkv-focus-card is-active" data-qkv-focus="2" width="58" height="44" rx="11" fill="#fff0e5" stroke="#ff876a" stroke-width="2.5"/>
+      <rect x="10" y="9" width="8" height="25" rx="3" fill="#f4a164"/>
+      <rect x="25" y="16" width="8" height="18" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+    </g>
+
+    <!-- Embeddings flow into the layer -->
+    <g fill="none" stroke="#4d74f4" stroke-width="3" stroke-linecap="round" marker-end="url(#qkv-arrow-blue)" opacity=".82">
+      <line x1="420" y1="465" x2="420" y2="418"/>
+      <line x1="590" y1="465" x2="590" y2="418"/>
+      <line x1="760" y1="465" x2="760" y2="418"/>
+    </g>
+
+    <!-- Embedding layer -->
+    <rect x="58" y="467" width="884" height="68" rx="20" class="qkv-layer" filter="url(#qkv-shadow)"/>
+    <text x="92" y="496" class="qkv-section">Embedding layer</text>
+    <text x="92" y="518" class="qkv-sub">one initial vector per token</text>
+
+    <g transform="translate(391 479)">
+      <rect width="58" height="44" rx="11" fill="#edf3f9"/>
+      <rect x="10" y="13" width="8" height="21" rx="3" fill="#4d74f4"/>
+      <rect x="25" y="7" width="8" height="27" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="18" width="8" height="16" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(561 479)">
+      <rect width="58" height="44" rx="11" fill="#edf3f9"/>
+      <rect x="10" y="17" width="8" height="17" rx="3" fill="#a5bdd1"/>
+      <rect x="25" y="9" width="8" height="25" rx="3" fill="#4d74f4"/>
+      <rect x="40" y="14" width="8" height="20" rx="3" fill="#d0deea"/>
+    </g>
+    <g transform="translate(731 479)">
+      <rect class="qkv-focus-card is-active" width="58" height="44" rx="11" fill="#fff0e5" stroke="#ff876a" stroke-width="2.5"/>
+      <rect x="10" y="9" width="8" height="25" rx="3" fill="#f4a164"/>
+      <rect x="25" y="16" width="8" height="18" rx="3" fill="#a5bdd1"/>
+      <rect x="40" y="6" width="8" height="28" rx="3" fill="#4d74f4"/>
+    </g>
+
+    <!-- Input tokens -->
+    <text x="347" y="572" text-anchor="end" class="qkv-small">INPUT</text>
+    <rect x="386" y="549" width="68" height="37" rx="12" fill="#e9eefc"/>
+    <text x="420" y="574" text-anchor="middle" class="qkv-token">The</text>
+
+    <rect x="556" y="549" width="68" height="37" rx="12" fill="#ddf3ee"/>
+    <text x="590" y="574" text-anchor="middle" class="qkv-token">cat</text>
+
+    <rect x="726" y="549" width="68" height="37" rx="12" fill="#fff0e5" stroke="#ff876a" stroke-width="2"/>
+    <text x="760" y="574" text-anchor="middle" class="qkv-token">sat</text>
+
+    <g fill="none" stroke="#4d74f4" stroke-width="3" stroke-linecap="round" marker-end="url(#qkv-arrow-blue)" opacity=".82">
+      <line x1="420" y1="547" x2="420" y2="539"/>
+      <line x1="590" y1="547" x2="590" y2="539"/>
+      <line x1="760" y1="547" x2="760" y2="539"/>
+    </g>
+  </svg>
+
+  <div class="viz-row qkv-controls">
+    <button id="qkv-previous" class="btn" type="button">Previous</button>
+    <span id="qkv-step" class="viz-badge">Step 1 of 4</span>
+    <button id="qkv-next" class="btn btn-primary" type="button">Next</button>
+    <span id="qkv-live" class="sr-only" aria-live="polite"></span>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.getElementById("query-key-value-attention");
+      if (!root || root.dataset.ready === "true") return;
+      root.dataset.ready = "true";
+
+      const captions = [
+        "1 - BUILD TOKEN EMBEDDINGS",
+        "2 - CREATE KEYS, VALUES AND ONE QUERY",
+        "3 - MATCH THE QUERY WITH EVERY KEY",
+        "4 - COMBINE VALUES INTO THE NEW REPRESENTATION"
+      ];
+      const projectionStage = root.querySelector("#qkv-projection-stage");
+      const matchStage = root.querySelector("#qkv-match-stage");
+      const valueStage = root.querySelector("#qkv-value-stage");
+      const output = root.querySelector("#qkv-output");
+      const outputArrow = root.querySelector("#qkv-output-arrow");
+      const caption = root.querySelector("#qkv-step-caption");
+      const previous = root.querySelector("#qkv-previous");
+      const next = root.querySelector("#qkv-next");
+      const stepLabel = root.querySelector("#qkv-step");
+      const live = root.querySelector("#qkv-live");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      let currentStep = 0;
+      let outputTimer;
+
+      function replayPaths(group) {
+        group.querySelectorAll(".qkv-match-path, .qkv-value-path").forEach(function (path) {
+          path.style.animation = "none";
+          path.getBoundingClientRect();
+          path.style.animation = "";
+        });
+      }
+
+      function setStep(step) {
+        window.clearTimeout(outputTimer);
+
+        projectionStage.classList.toggle("is-visible", step >= 1);
+        matchStage.classList.toggle("is-visible", step === 2);
+        matchStage.classList.toggle("is-complete", step > 2);
+        valueStage.classList.toggle("is-visible", step >= 3);
+        output.classList.remove("is-visible");
+        outputArrow.classList.remove("is-visible");
+
+        if (step === 2) replayPaths(matchStage);
+        if (step === 3) replayPaths(valueStage);
+
+        caption.textContent = captions[step];
+        stepLabel.textContent = "Step " + (step + 1) + " of 4";
+        live.textContent = captions[step];
+        previous.disabled = step === 0;
+        next.disabled = step === captions.length - 1;
+
+        if (step === 3) {
+          outputTimer = window.setTimeout(function () {
+            output.classList.add("is-visible");
+            outputArrow.classList.add("is-visible");
+            live.textContent = captions[step] + ". The new representation of sat is produced.";
+          }, reducedMotion ? 0 : 700);
+        }
+      }
+
+      previous.addEventListener("click", function () {
+        currentStep = Math.max(0, currentStep - 1);
+        setStep(currentStep);
+      });
+
+      next.addEventListener("click", function () {
+        currentStep = Math.min(captions.length - 1, currentStep + 1);
+        setStep(currentStep);
+      });
+
+      setStep(currentStep);
+    }());
+  </script>
+</div>
+
+<script id="pptx-animation-fit">
+(function () {
+  "use strict";
+  var body = document.body;
+  var root = document.documentElement;
+  function exposeScrollableContent() {
+    Array.prototype.forEach.call(document.querySelectorAll("body *"), function (element) {
+      if (element.scrollWidth > element.clientWidth + 1 ||
+          element.scrollHeight > element.clientHeight + 1) {
+        element.style.setProperty("overflow", "visible", "important");
+        element.style.setProperty("overflow-x", "visible", "important");
+        element.style.setProperty("overflow-y", "visible", "important");
+      }
+    });
+  }
+  function fitAnimation() {
+    body.style.transform = "none";
+    body.style.removeProperty("width");
+    body.style.removeProperty("height");
+    body.style.removeProperty("position");
+    body.style.removeProperty("left");
+    body.style.removeProperty("top");
+    root.style.setProperty("overflow", "hidden", "important");
+    body.style.setProperty("overflow", "visible", "important");
+    exposeScrollableContent();
+    window.requestAnimationFrame(function () {
+      var width = Math.max(body.scrollWidth, body.offsetWidth, root.scrollWidth, root.clientWidth);
+      var height = Math.max(body.scrollHeight, body.offsetHeight, root.scrollHeight, root.clientHeight);
+      var scale = Math.min(window.innerWidth / width, window.innerHeight / height);
+      body.style.margin = "0";
+      body.style.transformOrigin = "top left";
+      body.style.width = width + "px";
+      body.style.height = height + "px";
+      body.style.position = "absolute";
+      body.style.left = Math.max(0, (window.innerWidth - width * scale) / 2) + "px";
+      body.style.top = Math.max(0, (window.innerHeight - height * scale) / 2) + "px";
+      body.style.transform = "scale(" + scale + ")";
+      var autoButton = body.querySelector("#auto");
+      if (autoButton && !autoButton.dataset.pptxAutoplayStarted) {
+        autoButton.dataset.pptxAutoplayStarted = "true";
+        autoButton.click();
+      }
+    });
+  }
+  if (document.readyState === "complete") fitAnimation();
+  else window.addEventListener("load", fitAnimation, { once: true });
+  window.addEventListener("resize", fitAnimation);
+}());
+</script>
