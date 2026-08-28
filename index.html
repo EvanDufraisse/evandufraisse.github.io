@@ -3,6 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (() => {
+      const pageUrl = new URL(window.location.href);
+      const navigation = window.performance.getEntriesByType("navigation")[0];
+      const isReload = navigation
+        ? navigation.type === "reload"
+        : window.performance.navigation?.type === 1;
+
+      if (!pageUrl.searchParams.has("_fresh") || isReload) {
+        const token = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        pageUrl.searchParams.set("_fresh", token);
+        window.location.replace(pageUrl);
+        return;
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        const token = pageUrl.searchParams.get("_fresh");
+        document.querySelectorAll("a.session").forEach((link) => {
+          const target = new URL(link.href);
+          target.searchParams.set("_fresh", token);
+          link.href = target;
+        });
+      });
+    })();
+  </script>
   <title>Introduction to AI — sessions 1–6</title>
   <style>
     :root { --red:#e6142d; --navy:#16263d; --line:#d8dce3; --muted:#626872; }
