@@ -48,8 +48,18 @@
     .number { color:#8f0f1d; font-size:14px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
     h3 { color:var(--navy); font-size:26px; margin:10px 0; }
     p { font-size:18px; line-height:1.4; }
-    footer { border-top:1px solid var(--line); color:var(--muted); margin-top:42px; padding-top:22px; }
-    footer a { color:#8f0f1d; }
+    footer { border-top:1px solid var(--line); color:var(--muted); display:grid; gap:18px; margin-top:42px; padding-top:22px; }
+    .footer-top { align-items:center; display:flex; flex-wrap:wrap; gap:16px; justify-content:space-between; }
+    .footer-note, .copyright { margin:0; }
+    .footer-note { font-size:16px; }
+    .footer-actions { display:flex; flex-wrap:wrap; gap:10px; }
+    .footer-link { border:1px solid #c5cad3; border-radius:999px; color:var(--navy); display:inline-flex; font-size:14px; font-weight:700; padding:9px 14px; text-decoration:none; }
+    .footer-link:hover, .footer-link:focus-visible { border-color:var(--red); outline:3px solid rgb(230 20 45 / 14%); }
+    .footer-link.linkedin { background:#0a66c2; border-color:#0a66c2; color:#fff; }
+    .footer-link.linkedin:hover, .footer-link.linkedin:focus-visible { background:#084f96; border-color:#084f96; }
+    .copyright { border-top:1px solid var(--line); font-size:14px; padding-top:16px; text-align:center; }
+    .copyright a { color:inherit; text-decoration:none; }
+    .copyright a:hover, .copyright a:focus-visible { color:#8f0f1d; text-decoration:underline; }
   </style>
 </head>
 <body><main>
@@ -67,6 +77,14 @@
     <a class="session" href="session-05/"><div class="number">Session 05</div><h3>From Raw Completion to Helpful Assistant</h3><p>Instruction tuning, preferences, post-training, and assistant behavior.</p></a>
     <a class="session" href="session-06/"><div class="number">Session 06</div><h3>From Model to Agent</h3><p>Reasoning, retrieval, tools, agent loops, multimodality, and verification.</p></a>
   </div></div>
-  <footer>Use the arrow keys to move through each deck.</footer>
+  <footer>
+    <div class="footer-top">
+      <p class="footer-note">Use the arrow keys to move through each deck.</p>
+      <div class="footer-actions" aria-label="Contact links">
+        <a class="footer-link linkedin" href="https://www.linkedin.com/in/evan-dufraisse-a297b8127/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      </div>
+    </div>
+    <p class="copyright"><a href="LICENSE">© 2026 Evan Dufraisse. All Rights Reserved.</a></p>
+  </footer>
 </main></body>
 </html>
